@@ -87,6 +87,7 @@ public class HookMain implements IXposedHookLoadPackage {
     public static SessionConfiguration sessionConfiguration;
     public static OutputConfiguration outputConfiguration;
     public boolean need_to_show_toast = true;
+    public boolean has_image_reader_target = false;
 
     public int c2_ori_width = 1280;
     public int c2_ori_height = 720;
@@ -536,6 +537,7 @@ public class HookMain implements IXposedHookLoadPackage {
                 }
                 String surfaceInfo = param.args[0].toString();
                 if (surfaceInfo.contains("Surface(name=null)")) {
+                    has_image_reader_target = true;
                     if (c2_reader_Surfcae == null) {
                         c2_reader_Surfcae = (Surface) param.args[0];
                     } else {
@@ -553,7 +555,9 @@ public class HookMain implements IXposedHookLoadPackage {
                     }
                 }
                 XposedBridge.log("【VCAM】添加目标：" + param.args[0].toString());
-                param.args[0] = c2_virtual_surface;
+                if (!has_image_reader_target) {
+                    param.args[0] = c2_virtual_surface;
+                }
 
             }
         });
@@ -632,7 +636,9 @@ public class HookMain implements IXposedHookLoadPackage {
                     return;
                 }
                 XposedBridge.log("【VCAM】开始build请求");
-                process_camera2_play();
+                if (!has_image_reader_target) {
+                    process_camera2_play();
+                }
             }
         });
 
@@ -816,6 +822,7 @@ public class HookMain implements IXposedHookLoadPackage {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 need_recreate = true;
+                has_image_reader_target = false;
                 create_virtual_surface();
                 if (c2_player != null) {
                     c2_player.stop();
@@ -862,9 +869,11 @@ public class HookMain implements IXposedHookLoadPackage {
                     protected void beforeHookedMethod(MethodHookParam paramd) throws Throwable {
                         if (paramd.args[0] != null) {
                             XposedBridge.log("【VCAM】createCaptureSession创捷捕获，原始:" + paramd.args[0].toString() + "虚拟：" + c2_virtual_surface.toString());
-                            paramd.args[0] = Arrays.asList(c2_virtual_surface);
-                            if (paramd.args[1] != null) {
-                                process_camera2Session_callback((CameraCaptureSession.StateCallback) paramd.args[1]);
+                            if (!has_image_reader_target) {
+                                paramd.args[0] = Arrays.asList(c2_virtual_surface);
+                                if (paramd.args[1] != null) {
+                                    process_camera2Session_callback((CameraCaptureSession.StateCallback) paramd.args[1]);
+                                }
                             }
                         }
                     }
@@ -905,12 +914,14 @@ public class HookMain implements IXposedHookLoadPackage {
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                             super.beforeHookedMethod(param);
                             if (param.args[0] != null) {
-                                outputConfiguration = new OutputConfiguration(c2_virtual_surface);
-                                param.args[0] = Arrays.asList(outputConfiguration);
+                                if (!has_image_reader_target) {
+                                    outputConfiguration = new OutputConfiguration(c2_virtual_surface);
+                                    param.args[0] = Arrays.asList(outputConfiguration);
 
-                                XposedBridge.log("【VCAM】执行了createCaptureSessionByOutputConfigurations-144777");
-                                if (param.args[1] != null) {
-                                    process_camera2Session_callback((CameraCaptureSession.StateCallback) param.args[1]);
+                                    XposedBridge.log("【VCAM】执行了createCaptureSessionByOutputConfigurations-144777");
+                                    if (param.args[1] != null) {
+                                        process_camera2Session_callback((CameraCaptureSession.StateCallback) param.args[1]);
+                                    }
                                 }
                             }
                         }
@@ -923,10 +934,12 @@ public class HookMain implements IXposedHookLoadPackage {
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                             super.beforeHookedMethod(param);
                             if (param.args[0] != null) {
-                                param.args[0] = Arrays.asList(c2_virtual_surface);
-                                XposedBridge.log("【VCAM】执行了 createConstrainedHighSpeedCaptureSession -5484987");
-                                if (param.args[1] != null) {
-                                    process_camera2Session_callback((CameraCaptureSession.StateCallback) param.args[1]);
+                                if (!has_image_reader_target) {
+                                    param.args[0] = Arrays.asList(c2_virtual_surface);
+                                    XposedBridge.log("【VCAM】执行了 createConstrainedHighSpeedCaptureSession -5484987");
+                                    if (param.args[1] != null) {
+                                        process_camera2Session_callback((CameraCaptureSession.StateCallback) param.args[1]);
+                                    }
                                 }
                             }
                         }
@@ -939,10 +952,12 @@ public class HookMain implements IXposedHookLoadPackage {
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                             super.beforeHookedMethod(param);
                             if (param.args[1] != null) {
-                                param.args[1] = Arrays.asList(c2_virtual_surface);
-                                XposedBridge.log("【VCAM】执行了 createReprocessableCaptureSession ");
-                                if (param.args[2] != null) {
-                                    process_camera2Session_callback((CameraCaptureSession.StateCallback) param.args[2]);
+                                if (!has_image_reader_target) {
+                                    param.args[1] = Arrays.asList(c2_virtual_surface);
+                                    XposedBridge.log("【VCAM】执行了 createReprocessableCaptureSession ");
+                                    if (param.args[2] != null) {
+                                        process_camera2Session_callback((CameraCaptureSession.StateCallback) param.args[2]);
+                                    }
                                 }
                             }
                         }
@@ -956,11 +971,13 @@ public class HookMain implements IXposedHookLoadPackage {
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                             super.beforeHookedMethod(param);
                             if (param.args[1] != null) {
-                                outputConfiguration = new OutputConfiguration(c2_virtual_surface);
-                                param.args[0] = Arrays.asList(outputConfiguration);
-                                XposedBridge.log("【VCAM】执行了 createReprocessableCaptureSessionByConfigurations");
-                                if (param.args[2] != null) {
-                                    process_camera2Session_callback((CameraCaptureSession.StateCallback) param.args[2]);
+                                if (!has_image_reader_target) {
+                                    outputConfiguration = new OutputConfiguration(c2_virtual_surface);
+                                    param.args[0] = Arrays.asList(outputConfiguration);
+                                    XposedBridge.log("【VCAM】执行了 createReprocessableCaptureSessionByConfigurations");
+                                    if (param.args[2] != null) {
+                                        process_camera2Session_callback((CameraCaptureSession.StateCallback) param.args[2]);
+                                    }
                                 }
                             }
                         }
@@ -974,14 +991,16 @@ public class HookMain implements IXposedHookLoadPackage {
                             super.beforeHookedMethod(param);
                             if (param.args[0] != null) {
                                 XposedBridge.log("【VCAM】执行了 createCaptureSession -5484987");
-                                sessionConfiguration = (SessionConfiguration) param.args[0];
-                                outputConfiguration = new OutputConfiguration(c2_virtual_surface);
-                                fake_sessionConfiguration = new SessionConfiguration(sessionConfiguration.getSessionType(),
-                                        Arrays.asList(outputConfiguration),
-                                        sessionConfiguration.getExecutor(),
-                                        sessionConfiguration.getStateCallback());
-                                param.args[0] = fake_sessionConfiguration;
-                                process_camera2Session_callback(sessionConfiguration.getStateCallback());
+                                if (!has_image_reader_target) {
+                                    sessionConfiguration = (SessionConfiguration) param.args[0];
+                                    outputConfiguration = new OutputConfiguration(c2_virtual_surface);
+                                    fake_sessionConfiguration = new SessionConfiguration(sessionConfiguration.getSessionType(),
+                                            Arrays.asList(outputConfiguration),
+                                            sessionConfiguration.getExecutor(),
+                                            sessionConfiguration.getStateCallback());
+                                    param.args[0] = fake_sessionConfiguration;
+                                    process_camera2Session_callback(sessionConfiguration.getStateCallback());
+                                }
                             }
                         }
                     });
