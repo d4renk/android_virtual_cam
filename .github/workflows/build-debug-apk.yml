@@ -1,0 +1,86 @@
+name: Build Debug APK
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_NAME: com.virtualcam.debug
+      KEYSTORE_B64: |
+        MIIKZgIBAzCCChAGCSqGSIb3DQEHAaCCCgEEggn9MIIJ+TCCBcAGCSqGSIb3DQEHAaCCBbEEggWtMIIFqTCCBaUGCyqGSIb3DQEMCgECoIIFQDCCBTwwZgYJ
+        KoZIhvcNAQUNMFkwOAYJKoZIhvcNAQUMMCsEFDZAWrMA6lPCKQEAWouzz53Wq3IjAgInEAIBIDAMBggqhkiG9w0CCQUAMB0GCWCGSAFlAwQBKgQQkQUMNqxI
+        sB6BR1v3I+JNcgSCBNDT7gZCXnoRvE6bDhgoN7u9svrGxIXUnClXSanDoceOxVPHlQ28y5EGFcSW68t7DLRD/Wlw8Dm/yFUw7mAKibfj/SVbRFbv6K7sBzXj
+        b/zZ3leO8exctXPpEYFf9mcBMmNj1T37uevJT8Mj7l88Owm9oxrtjPo/bpM9m7gzI5//+2KiD/1wU0MTMv86CT316v8p0sl0c2mPtAIWhLw2qbbLiEXZ4DyV
+        pZcxAW8xw9pwrGSd4zoKduihoTBiZNNyLZ90ovHjb8603wdy0nrw6Btmkuh94ssaLnl9hrJQK3ed0fq1oEOKHbiKuLA/8O/4Z3okS11/vlTNzCQ5r2zAt3AB
+        rAya2QroIear2K8nFgggcxOJBnJYIfp/LzHaGcBHFr3zx0okGcR8Mq5PZleTZGp4aJUVBZ/juiYBBjalU1M9nj1XHh6QON6Ohuxds5Bo5mDgWSMFJfp1OQjO
+        esNLXfzu9FeQcYHB9biQWrPNEznk0w0mlxuRtSwPd4mmBFZ/l/4zIuzA7GidQbTDBbedbtif5Lq8DpC68bhqt0tlQxwwStKg/lUSrUIOjzgFVvMIAJChVts/
+        jHNIGjz4WzCoS2bRsZy74PYtS9XOKjvg8A8avQsl4beZM3qSju3LwK7eGl2WSLLr3Gwpe8jkbX4bt7do6RXaYkF28gU5urYsr34asYMol0OylG1K0PwyUphV
+        OusF+4rCkwgM5JUTvmeGeV4vgnRoXXdO1MQ8KQxAPdXs2H8Ng0qpG2aoRBldzImoS0pvSIaHrxFcJC22+3vNjoftaQZL9tFdoQ1ejyfIXyy7Cx7GhzsvuB+m
+        qA9/uKR09SUutLP55j6LMcOSV47cThDUgKzo5Bw1T/4nQSoQrfuQUMAY1BeUptLyHTi9ooJ6AF4VutAjpzfgdK2LxEiohLMZVpfwY9zlBiwrS14NEiMvhw/o
+        TsRUY/bMRrIRKXL+PqIiZ0jsT14zxE7LWopl/3iY0+LeOlHY5Jc2qN37cdXG1ilmYK+TR3a/QfEcfsKdtF5D/ax7q/mHK+K7hLRDhUXJTaCgbEI/4lhbfKUU
+        Bsjw3vpIebVZdTddkGhITcmJwIZyjIHTdLSaUyFNmCc+Pgod1uAs5UCqWF7PJyXau/CcbNLDx7x50pqUQ5ldgC/IoTFz3bqMdQiNN/SQo1ae5DteRur1Rr0Q
+        LorE770vs+iShnidXkSgF9ySGt07KhHm906IvSLvWJPjSuLLdF0qWS5Y75GFgy3ki36rwUqpXgQfPScLI8ntz8tLClhTO7NJ2zGncicli/uPtafbTcp2Fssg
+        5LVKpZjz+wh5Rk8ZRkEli8Tp/On2SFAZ64PN8IFkClDX59JJNFGx+rRazfL94LttHIBNDOfeNqLTOYy/66BJhOaHYIk3SzwcDWq0mJKT00N7nyFBHMfv832z
+        XqFWG60z2iTZQs5Md/qNZXcJ2/hu7soAQzjZm2dgizcBiEFyJ3AkgHVizs17eTGcFsPkzaoyAvpHDKE9cn3RiIicwA4AO/bP/iltqcVeACqXXb0VAG28rxvs
+        xh5WgVesXYBd5H7RQy16uF+JdKlLtKB7MOkvcx8bD5xWYJp66ljWvl/CiX4Fp/eG0JzY3PTpo86kxA4us8NfuFCP8nwMlMqCgTIBbDFSMC0GCSqGSIb3DQEJ
+        FDEgHh4AYQBuAGQAcgBvAGkAZABkAGUAYgB1AGcAawBlAHkwIQYJKoZIhvcNAQkVMRQEElRpbWUgMTc2NTAzNTcxMTgyNDCCBDEGCSqGSIb3DQEHBqCCBCIw
+        ggQeAgEAMIIEFwYJKoZIhvcNAQcBMGYGCSqGSIb3DQEFDTBZMDgGCSqGSIb3DQEFDDArBBQlbgKsX4BulODkE3QN5DfeC3nk0gICJxACASAwDAYIKoZIhvcN
+        AgkFADAdBglghkgBZQMEASoEEMqhUhw8d5LDfkAf4i8qIoiAggOgQB0JHcBpkyEyolyehlwgu3cNhvSAC9FArIKaprkauubtbWxRHzHe7tMs/YK1866p/jaG
+        4wdLsitDHveqpuk2JMTZ2RedZFbRFUUcymi4UPv6aFWQyHCZS+HDnF0+e0uBNIVi07Qb65hH57/WO8JUojPIxyUP+mWVhkrOxoWoS/kE0vyt1sudxLBlx1qh
+        fBBdlgV8MvDYkl8CAyJMbLw0oX/Yl3qkjJBplsvSEF2GkfgdgvPD91QRrSdGfwgNEa34homXsI8FUGeaCIY9/Bvi2FQWfDO1gT18L5gMgmU+EJDAQqpWRBwj
+        RuzMGpkFqelbc5jnFE79RJFzsPHXOMPepBPRILdpkpA9xE1APxVsq4p6C1OdF70TyOLz0SMpLnQtVfXQ2M4yGZ4MjhCpvXwT9xlvk1yAc3bOCYoZlJu/8MIm
+        92RzGgDUZ4DYBZKrRFVAUpNwquAhQYZj6jY4ixfJLAFze+hQZ5VtkRPevbMqI/H3t8tJl1LjyGB7hLF8ymkzVRUEUl0qKJK7IJRDqot+pabMtkxNR1HcPZSc
+        DIb9+zQogzvpcwt9fIuJwIlef6bVMxWOhtV9PvZApLG3knMgyEztZWAncqr8BeG+Z4vHcFl8EbgaieN8iiPlOKwvgG5j7h+Q9ygM8yhjUEDva/kB8W/HnSB0
+        gjof9WV/V9flFoeG8EXuXs2hdebKt3ZDsFf3F4FbAHA8WIe3u3vyeFnDZKl2m2KGF2qL2YhDCY6QjSE5+oA0RvtWttR84MnUq2GoIN2eWEpl2I+otxzjR0H0
+        tcfWfjjFuMEjQwZIOUDqsDkvGuNw/Ssga15MEmbKSeD71GJvECuPS6kckFUJEgmIFmNyIeu5nG8xIarmCkuCG2VyhZbhEirvQaMWtndjxgeDv9pBOgOcILaX
+        xf3gChh8/UhP1mU/lOdGlpLBDUcqZyafYSyPi1H53OaFQVEw05CafZqsxtIxYJueuYTRhpbMm1K5yzYcwmL7yziMBcZgePoB854ApG419UX+UZJ47D7IAxcK
+        QiIleZCz+MONSB/1VBQd5OpT+1PyeHOxBiKgg9P5pfo+WeSOwgmfveOeUll+x7ozP1dYcUR9V5s7VSw45CmjWnLBn+ax5JrttrNL2vAEbgUWQKAhCwx501kI
+        1/60CB4hELKpLfjJ+fi2gI0jW0HmOWWXeX73TSbli5RjV+ur+PLyYZ+A1EJ0UIcDMSlHFt5OQoLspTkuxwjAgKruNjBNMDEwDQYJYIZIAWUDBAIBBQAEIFMe
+        d7crOHjg952hiBfC+HVp/Styty5t3hIXLCH5eTI1BBT6+p1iT9SM47EK2JUPntvQ0myo3gICJxA=
+      KEYSTORE_PASSWORD: android
+      KEY_ALIAS: androiddebugkey
+      KEY_PASSWORD: android
+      GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Restore debug keystore
+        run: |
+          mkdir -p ~/.android
+          echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+          echo "Keystore restored for package $PACKAGE_NAME"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Find generated APK
+        id: apk
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            echo "Debug APK not found" >&2
+            exit 1
+          fi
+          echo "apk_path=$APK_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-${{ github.sha }}
+          path: ${{ steps.apk.outputs.apk_path }}
