@@ -47,6 +47,10 @@ import android.provider.DocumentsContract
 import android.media.MediaMetadataRetriever
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.ReturnCode
+import java.io.FileOutputStream
+import android.provider.OpenableColumns
 
 class MainActivity : ComponentActivity() {
 
@@ -60,6 +64,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private lateinit var pickDirLauncher: ActivityResultLauncher<Uri?>
+    private lateinit var pickImageLauncher: ActivityResultLauncher<String>
 
     private val forceShowState = mutableStateOf(false)
     private val disableState = mutableStateOf(false)
@@ -68,6 +73,10 @@ class MainActivity : ComponentActivity() {
     private val disableToastState = mutableStateOf(false)
     private val videoDirState = mutableStateOf(DEFAULT_VIDEO_DIR)
     private val materialCheckState = mutableStateOf("")
+    private val selectedImageNameState = mutableStateOf("")
+    private val selectedImageUriState = mutableStateOf<Uri?>(null)
+    private val generateState = mutableStateOf("")
+    private val expectedResolutionState = mutableStateOf("")
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -94,6 +103,11 @@ class MainActivity : ComponentActivity() {
         pickDirLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
             if (it != null) {
                 handlePickedDir(it)
+            }
+        }
+        pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) {
+            if (it != null) {
+                handlePickedImage(it)
             }
         }
         setContent {
@@ -137,23 +151,44 @@ class MainActivity : ComponentActivity() {
                 Text(text = stringResource(id = R.string.gitee))
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "当前目录: ${videoDirState.value}")
+            Text(text = stringResource(id = R.string.current_dir, videoDirState.value))
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Button(onClick = { pickDirLauncher.launch(null) }) {
-                    Text(text = "选择目录")
+                    Text(text = stringResource(id = R.string.pick_dir))
                 }
                 Button(onClick = { openVideoDir() }) {
-                    Text(text = "打开目录")
+                    Text(text = stringResource(id = R.string.open_dir))
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+            if (expectedResolutionState.value.isNotBlank()) {
+                Text(text = expectedResolutionState.value)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             Button(onClick = { checkMaterial() }, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "检测素材")
+                Text(text = stringResource(id = R.string.check_material))
             }
             if (materialCheckState.value.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = materialCheckState.value)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Button(onClick = { pickImageLauncher.launch("image/*") }) {
+                    Text(text = stringResource(id = R.string.pick_image))
+                }
+                Button(onClick = { generateVideoFromImage() }) {
+                    Text(text = stringResource(id = R.string.generate_video))
+                }
+            }
+            if (selectedImageNameState.value.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = stringResource(id = R.string.selected_image, selectedImageNameState.value))
+            }
+            if (generateState.value.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = generateState.value)
             }
             Spacer(modifier = Modifier.height(16.dp))
             SwitchRow(
@@ -229,6 +264,27 @@ class MainActivity : ComponentActivity() {
         setVideoDir(path, uri)
     }
 
+    private fun handlePickedImage(uri: Uri) {
+        selectedImageUriState.value = uri
+        selectedImageNameState.value = getDisplayName(uri) ?: "image"
+        generateState.value = ""
+    }
+
+    private fun getDisplayName(uri: Uri): String? {
+        return try {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        cursor.getString(0)
+                    } else {
+                        null
+                    }
+                }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private fun treeUriToPath(uri: Uri): String? {
         val docId = DocumentsContract.getTreeDocumentId(uri)
         val split = docId.split(":")
@@ -285,6 +341,7 @@ class MainActivity : ComponentActivity() {
         editor.apply()
         makePrefsReadable()
         videoDirState.value = normalizeDir(dir)
+        expectedResolutionState.value = formatExpectedResolution(readExpectedResolution())
         ensureVideoDirExists()
         updateMissingVideoNotification()
     }
@@ -359,6 +416,7 @@ class MainActivity : ComponentActivity() {
 
         makePrefsReadable()
         videoDirState.value = getVideoDir()
+        expectedResolutionState.value = formatExpectedResolution(readExpectedResolution())
         forceShowState.value = File(getVideoDir() + FileMode.FORCE_SHOW.fileName).exists()
         disableState.value = File(getVideoDir() + FileMode.DISABLE.fileName).exists()
         playSoundState.value = File(getVideoDir() + FileMode.PLAY_SOUND.fileName).exists()
@@ -391,8 +449,8 @@ class MainActivity : ComponentActivity() {
         )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_camera)
-            .setContentTitle("未找到 virtual.mp4")
-            .setContentText("当前目录: ${getVideoDir()}")
+            .setContentTitle(getString(R.string.notification_missing_title))
+            .setContentText(getString(R.string.notification_missing_text, getVideoDir()))
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .build()
@@ -437,15 +495,23 @@ class MainActivity : ComponentActivity() {
 
                 val expected = readExpectedResolution()
                 if (expected == null) {
-                    warnings.add("未检测到分辨率提示文件")
+                    warnings.add(getString(R.string.expected_resolution_missing))
                 } else if (width != null && height != null &&
-                    (width != expected.first || height != expected.second)
+                    (width != expected.width || height != expected.height)
                 ) {
-                    errors.add("分辨率不匹配")
-                    warnings.add("期望 ${expected.first}x${expected.second}，当前 ${width}x${height}")
+                    errors.add(getString(R.string.resolution_mismatch))
+                    warnings.add(
+                        getString(
+                            R.string.resolution_expected_detail,
+                            expected.width,
+                            expected.height,
+                            width,
+                            height
+                        )
+                    )
                 }
             } catch (e: Exception) {
-                errors.add("读取视频失败：${e.message}")
+                errors.add(getString(R.string.video_read_failed, e.message ?: ""))
             } finally {
                 retriever.release()
             }
@@ -453,18 +519,20 @@ class MainActivity : ComponentActivity() {
 
         val builder = StringBuilder()
         if (errors.isEmpty()) {
-            builder.append("检测通过")
+            builder.append(getString(R.string.check_ok))
         } else {
-            builder.append("检测失败：").append(errors.joinToString("；"))
+            builder.append(getString(R.string.check_failed, errors.joinToString("；")))
         }
         if (warnings.isNotEmpty()) {
-            builder.append("\n警告：").append(warnings.joinToString("；"))
+            builder.append("\n").append(getString(R.string.check_warning, warnings.joinToString("；")))
         }
         materialCheckState.value = builder.toString()
         updateMissingVideoNotification()
     }
 
-    private fun readExpectedResolution(): Pair<Int, Int>? {
+    private data class ExpectedResolution(val width: Int, val height: Int, val source: String?)
+
+    private fun readExpectedResolution(): ExpectedResolution? {
         val file = File(getVideoDir() + "last_resolution.txt")
         if (!file.exists()) {
             return null
@@ -476,11 +544,103 @@ class MainActivity : ComponentActivity() {
             } else {
                 val width = parts[0].toIntOrNull()
                 val height = parts[1].toIntOrNull()
-                if (width == null || height == null) null else width to height
+                val source = if (parts.size > 2) parts[2] else null
+                if (width == null || height == null) null else ExpectedResolution(width, height, source)
             }
         } catch (e: Exception) {
             null
         }
+    }
+
+    private fun formatExpectedResolution(expected: ExpectedResolution?): String {
+        return if (expected == null) {
+            getString(R.string.expected_resolution_missing)
+        } else if (expected.source.isNullOrBlank()) {
+            getString(R.string.expected_resolution, expected.width, expected.height)
+        } else {
+            getString(R.string.expected_resolution_with_source, expected.width, expected.height, expected.source)
+        }
+    }
+
+    private fun generateVideoFromImage() {
+        val uri = selectedImageUriState.value
+        if (uri == null) {
+            Toast.makeText(this, R.string.pick_image_first, Toast.LENGTH_SHORT).show()
+            return
+        }
+        ensureVideoDirExists()
+        generateState.value = getString(R.string.generate_in_progress)
+        val inputFile = File(cacheDir, "vcam_source_image")
+        if (!copyUriToFile(uri, inputFile)) {
+            generateState.value = getString(R.string.generate_failed, "无法读取图片")
+            return
+        }
+        val target = readExpectedResolution()
+        val targetSize = target ?: getImageResolution(uri)
+        if (targetSize == null) {
+            generateState.value = getString(R.string.generate_failed, "无法读取图片分辨率")
+            return
+        }
+        var width = targetSize.width
+        var height = targetSize.height
+        if (width % 2 != 0) width += 1
+        if (height % 2 != 0) height += 1
+        val outputFile = File(getVideoDir() + "virtual.mp4")
+        val command = buildFfmpegCommand(inputFile.absolutePath, outputFile.absolutePath, width, height, 5)
+        FFmpegKit.executeAsync(command) { session ->
+            val returnCode = session.returnCode
+            runOnUiThread {
+                if (ReturnCode.isSuccess(returnCode)) {
+                    generateState.value = getString(R.string.generate_ok, outputFile.absolutePath)
+                } else {
+                    generateState.value = getString(R.string.generate_failed, returnCode.toString())
+                }
+                updateMissingVideoNotification()
+            }
+        }
+    }
+
+    private fun copyUriToFile(uri: Uri, dest: File): Boolean {
+        return try {
+            contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(dest).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun getImageResolution(uri: Uri): ExpectedResolution? {
+        return try {
+            val options = android.graphics.BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            contentResolver.openInputStream(uri)?.use { input ->
+                android.graphics.BitmapFactory.decodeStream(input, null, options)
+            }
+            if (options.outWidth > 0 && options.outHeight > 0) {
+                ExpectedResolution(options.outWidth, options.outHeight, "image")
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun buildFfmpegCommand(
+        inputPath: String,
+        outputPath: String,
+        width: Int,
+        height: Int,
+        durationSeconds: Int
+    ): String {
+        val filter = "scale=${width}:${height}:force_original_aspect_ratio=decrease," +
+            "pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2"
+        return "-y -loop 1 -i \"$inputPath\" -t $durationSeconds -r 30 -vf \"$filter\" -pix_fmt yuv420p \"$outputPath\""
     }
 
     private fun ensureVideoDirExists() {

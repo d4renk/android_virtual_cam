@@ -13,4 +13,26 @@
     <string name="permission_description">The permission to access local storage is used to set up configuration files. If refused you need to set up file manually.</string>
     <string name="positive">Sure</string>
     <string name="negative">Refuse</string>
+    <string name="current_dir">Current directory: %1$s</string>
+    <string name="pick_dir">Pick directory</string>
+    <string name="open_dir">Open directory</string>
+    <string name="check_material">Check material</string>
+    <string name="pick_image">Pick photo</string>
+    <string name="generate_video">Generate video</string>
+    <string name="selected_image">Selected photo: %1$s</string>
+    <string name="expected_resolution_missing">No expected resolution yet</string>
+    <string name="expected_resolution">Expected resolution: %1$dx%2$d</string>
+    <string name="expected_resolution_with_source">Expected resolution: %1$dx%2$d (%3$s)</string>
+    <string name="resolution_mismatch">Resolution mismatch</string>
+    <string name="resolution_expected_detail">Expected %1$dx%2$d, current %3$dx%4$d</string>
+    <string name="video_read_failed">Failed to read video: %1$s</string>
+    <string name="check_ok">Check passed</string>
+    <string name="check_failed">Check failed: %1$s</string>
+    <string name="check_warning">Warning: %1$s</string>
+    <string name="pick_image_first">Please pick a photo first</string>
+    <string name="generate_in_progress">Generating…</string>
+    <string name="generate_ok">Generated: %1$s</string>
+    <string name="generate_failed">Generate failed: %1$s</string>
+    <string name="notification_missing_title">virtual.mp4 missing</string>
+    <string name="notification_missing_text">Current directory: %1$s</string>
 </resources>
