@@ -14,4 +14,26 @@
     <string name="permission_description">The permission to access local storage is used to set up configuration files. If refused you need to set up file manually.</string>
     <string name="positive">Sure</string>
     <string name="negative">Refuse</string>
+    <string name="current_dir">当前目录: %1$s</string>
+    <string name="pick_dir">选择目录</string>
+    <string name="open_dir">打开目录</string>
+    <string name="check_material">检测素材</string>
+    <string name="pick_image">选择照片</string>
+    <string name="generate_video">生成视频</string>
+    <string name="selected_image">已选照片: %1$s</string>
+    <string name="expected_resolution_missing">未检测到分辨率提示</string>
+    <string name="expected_resolution">建议分辨率: %1$dx%2$d</string>
+    <string name="expected_resolution_with_source">建议分辨率: %1$dx%2$d (%3$s)</string>
+    <string name="resolution_mismatch">分辨率不匹配</string>
+    <string name="resolution_expected_detail">期望 %1$dx%2$d，当前 %3$dx%4$d</string>
+    <string name="video_read_failed">读取视频失败：%1$s</string>
+    <string name="check_ok">检测通过</string>
+    <string name="check_failed">检测失败：%1$s</string>
+    <string name="check_warning">警告：%1$s</string>
+    <string name="pick_image_first">请先选择照片</string>
+    <string name="generate_in_progress">生成中…</string>
+    <string name="generate_ok">生成成功：%1$s</string>
+    <string name="generate_failed">生成失败：%1$s</string>
+    <string name="notification_missing_title">未找到 virtual.mp4</string>
+    <string name="notification_missing_text">当前目录: %1$s</string>
 </resources>
