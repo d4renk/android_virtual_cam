@@ -10,6 +10,9 @@ import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,6 +44,9 @@ import com.example.vcam.ui.theme.AppTheme
 import java.io.File
 import java.io.IOException
 import android.provider.DocumentsContract
+import android.media.MediaMetadataRetriever
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 
 class MainActivity : ComponentActivity() {
 
@@ -49,6 +55,8 @@ class MainActivity : ComponentActivity() {
         private const val KEY_VIDEO_DIR = "video_dir"
         private const val KEY_TREE_URI = "video_dir_tree_uri"
         private const val DEFAULT_VIDEO_DIR = "/storage/emulated/0/Download/Camera1/"
+        private const val CHANNEL_ID = "vcam_status"
+        private const val NOTIFICATION_ID = 1001
     }
 
     private lateinit var pickDirLauncher: ActivityResultLauncher<Uri?>
@@ -59,6 +67,7 @@ class MainActivity : ComponentActivity() {
     private val forcePrivateDirState = mutableStateOf(false)
     private val disableToastState = mutableStateOf(false)
     private val videoDirState = mutableStateOf(DEFAULT_VIDEO_DIR)
+    private val materialCheckState = mutableStateOf("")
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -137,6 +146,14 @@ class MainActivity : ComponentActivity() {
                 Button(onClick = { openVideoDir() }) {
                     Text(text = "打开目录")
                 }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { checkMaterial() }, modifier = Modifier.fillMaxWidth()) {
+                Text(text = "检测素材")
+            }
+            if (materialCheckState.value.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = materialCheckState.value)
             }
             Spacer(modifier = Modifier.height(16.dp))
             SwitchRow(
@@ -269,6 +286,7 @@ class MainActivity : ComponentActivity() {
         makePrefsReadable()
         videoDirState.value = normalizeDir(dir)
         ensureVideoDirExists()
+        updateMissingVideoNotification()
     }
 
     private fun updateToggle(mode: FileMode, enabled: Boolean) {
@@ -346,12 +364,122 @@ class MainActivity : ComponentActivity() {
         playSoundState.value = File(getVideoDir() + FileMode.PLAY_SOUND.fileName).exists()
         forcePrivateDirState.value = File(getVideoDir() + FileMode.FORCE_PRIVATE_DIR.fileName).exists()
         disableToastState.value = File(getVideoDir() + FileMode.DISABLE_TOAST.fileName).exists()
+        updateMissingVideoNotification()
     }
 
     private fun makePrefsReadable() {
         val prefFile = File(applicationInfo.dataDir, "shared_prefs/$PREFS_NAME.xml")
         if (prefFile.exists()) {
             prefFile.setReadable(true, false)
+        }
+    }
+
+    private fun updateMissingVideoNotification() {
+        val videoFile = File(getVideoDir() + "virtual.mp4")
+        val manager = NotificationManagerCompat.from(this)
+        if (videoFile.exists()) {
+            manager.cancel(NOTIFICATION_ID)
+            return
+        }
+        createNotificationChannel()
+        val intent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_menu_camera)
+            .setContentTitle("未找到 virtual.mp4")
+            .setContentText("当前目录: ${getVideoDir()}")
+            .setOngoing(true)
+            .setContentIntent(pendingIntent)
+            .build()
+        manager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "VCAM 状态提示",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun checkMaterial() {
+        val videoFile = File(getVideoDir() + "virtual.mp4")
+        val errors = mutableListOf<String>()
+        val warnings = mutableListOf<String>()
+        if (!videoFile.exists()) {
+            errors.add("未找到 virtual.mp4")
+        } else {
+            val retriever = MediaMetadataRetriever()
+            try {
+                retriever.setDataSource(videoFile.absolutePath)
+                val width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+                    ?.toIntOrNull()
+                val height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+                    ?.toIntOrNull()
+                val frame = retriever.getFrameAtTime(0)
+                if (width == null || height == null) {
+                    errors.add("无法读取视频分辨率")
+                }
+                if (frame == null) {
+                    errors.add("视频解码失败")
+                } else {
+                    frame.recycle()
+                }
+
+                val expected = readExpectedResolution()
+                if (expected == null) {
+                    warnings.add("未检测到分辨率提示文件")
+                } else if (width != null && height != null &&
+                    (width != expected.first || height != expected.second)
+                ) {
+                    errors.add("分辨率不匹配")
+                    warnings.add("期望 ${expected.first}x${expected.second}，当前 ${width}x${height}")
+                }
+            } catch (e: Exception) {
+                errors.add("读取视频失败：${e.message}")
+            } finally {
+                retriever.release()
+            }
+        }
+
+        val builder = StringBuilder()
+        if (errors.isEmpty()) {
+            builder.append("检测通过")
+        } else {
+            builder.append("检测失败：").append(errors.joinToString("；"))
+        }
+        if (warnings.isNotEmpty()) {
+            builder.append("\n警告：").append(warnings.joinToString("；"))
+        }
+        materialCheckState.value = builder.toString()
+        updateMissingVideoNotification()
+    }
+
+    private fun readExpectedResolution(): Pair<Int, Int>? {
+        val file = File(getVideoDir() + "last_resolution.txt")
+        if (!file.exists()) {
+            return null
+        }
+        return try {
+            val parts = file.readText().trim().split(",")
+            if (parts.size < 2) {
+                null
+            } else {
+                val width = parts[0].toIntOrNull()
+                val height = parts[1].toIntOrNull()
+                if (width == null || height == null) null else width to height
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 
