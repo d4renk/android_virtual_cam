@@ -13,6 +13,8 @@ import android.widget.Toast
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.res.Configuration
+import android.graphics.Color
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +47,8 @@ import java.io.File
 import java.io.IOException
 import android.provider.DocumentsContract
 import android.media.MediaMetadataRetriever
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.arthenica.ffmpegkit.FFmpegKit
@@ -102,6 +106,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setupStatusBar()
         pickDirLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
             if (it != null) {
                 handlePickedDir(it)
@@ -118,6 +123,14 @@ class MainActivity : ComponentActivity() {
             }
         }
         syncStateWithFiles()
+    }
+
+    private fun setupStatusBar() {
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        window.statusBarColor = Color.TRANSPARENT
+        val isNight = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isNight
     }
 
     @Composable
