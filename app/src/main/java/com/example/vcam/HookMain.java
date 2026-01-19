@@ -122,6 +122,18 @@ public class HookMain implements IXposedHookLoadPackage {
         return getConfiguredPublicDir();
     }
 
+    private static void writeLastResolution(int width, int height, String source) {
+        try {
+            FileOutputStream fos = new FileOutputStream(getActiveVideoDir() + "last_resolution.txt", false);
+            String content = width + "," + height + "," + source;
+            fos.write(content.getBytes());
+            fos.flush();
+            fos.close();
+        } catch (Exception e) {
+            XposedBridge.log("【VCAM】[resolution]" + e);
+        }
+    }
+
     public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam lpparam) throws Exception {
         XposedHelpers.findAndHookMethod("android.hardware.Camera", lpparam.classLoader, "setPreviewTexture", SurfaceTexture.class, new XC_MethodHook() {
             @Override
@@ -1076,6 +1088,7 @@ public class HookMain implements IXposedHookLoadPackage {
                     onemwidth = loaclcam.getParameters().getPreviewSize().width;
                     onemhight = loaclcam.getParameters().getPreviewSize().height;
                     XposedBridge.log("【VCAM】JPEG拍照回调初始化：宽：" + onemwidth + "高：" + onemhight + "对应的类：" + loaclcam.toString());
+                    writeLastResolution(onemwidth, onemhight, "photo_jpeg");
                     File toast_control = new File(getActiveVideoDir() + "no_toast.jpg");
                     need_to_show_toast = !toast_control.exists();
                     if (toast_content != null && need_to_show_toast) {
@@ -1117,6 +1130,7 @@ public class HookMain implements IXposedHookLoadPackage {
                     onemwidth = loaclcam.getParameters().getPreviewSize().width;
                     onemhight = loaclcam.getParameters().getPreviewSize().height;
                     XposedBridge.log("【VCAM】YUV拍照回调初始化：宽：" + onemwidth + "高：" + onemhight + "对应的类：" + loaclcam.toString());
+                    writeLastResolution(onemwidth, onemhight, "photo_yuv");
                     File toast_control = new File(getActiveVideoDir() + "no_toast.jpg");
                     need_to_show_toast = !toast_control.exists();
                     if (toast_content != null && need_to_show_toast) {
@@ -1175,6 +1189,7 @@ public class HookMain implements IXposedHookLoadPackage {
                     mhight = camera_onPreviewFrame.getParameters().getPreviewSize().height;
                     int frame_Rate = camera_onPreviewFrame.getParameters().getPreviewFrameRate();
                     XposedBridge.log("【VCAM】帧预览回调初始化：宽：" + mwidth + " 高：" + mhight + " 帧率：" + frame_Rate);
+                    writeLastResolution(mwidth, mhight, "preview");
                     File toast_control = new File(getActiveVideoDir() + "no_toast.jpg");
                     need_to_show_toast = !toast_control.exists();
                     if (toast_content != null && need_to_show_toast) {
