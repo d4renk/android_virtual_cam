@@ -55,6 +55,7 @@ import android.provider.OpenableColumns
 class MainActivity : ComponentActivity() {
 
     companion object {
+        private const val TAG = "VCAM_Main"
         private const val PREFS_NAME = "vcam_prefs"
         private const val KEY_VIDEO_DIR = "video_dir"
         private const val KEY_TREE_URI = "video_dir_tree_uri"
@@ -71,6 +72,7 @@ class MainActivity : ComponentActivity() {
     private val playSoundState = mutableStateOf(false)
     private val forcePrivateDirState = mutableStateOf(false)
     private val disableToastState = mutableStateOf(false)
+    private val debugLogState = mutableStateOf(false)
     private val videoDirState = mutableStateOf(DEFAULT_VIDEO_DIR)
     private val materialCheckState = mutableStateOf("")
     private val selectedImageNameState = mutableStateOf("")
@@ -127,30 +129,6 @@ class MainActivity : ComponentActivity() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.Top
         ) {
-            Text(
-                text = stringResource(id = R.string.description),
-                fontSize = 20.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(id = R.string.Warning),
-                fontSize = 20.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = { openUrl("https://github.com/w2016561536/android_virtual_cam") },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = stringResource(id = R.string.click_to_go_to_repo))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = { openUrl("https://gitee.com/w2016561536/android_virtual_cam") },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = stringResource(id = R.string.gitee))
-            }
-            Spacer(modifier = Modifier.height(16.dp))
             Text(text = stringResource(id = R.string.current_dir, videoDirState.value))
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -216,6 +194,11 @@ class MainActivity : ComponentActivity() {
                 checked = disableToastState.value,
                 onCheckedChange = { updateToggle(FileMode.DISABLE_TOAST, it) }
             )
+            SwitchRow(
+                textRes = R.string.switch6,
+                checked = debugLogState.value,
+                onCheckedChange = { updateToggle(FileMode.DEBUG_LOG, it) }
+            )
         }
     }
 
@@ -240,20 +223,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openUrl(url: String) {
-        val uri = Uri.parse(url)
-        val intent = Intent(Intent.ACTION_VIEW, uri)
-        startActivity(intent)
-    }
-
     private fun handlePickedDir(uri: Uri) {
+        logDebug("picked dir uri=$uri")
         try {
             contentResolver.takePersistableUriPermission(
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
         } catch (e: SecurityException) {
-            Log.w(application.packageName, "VCAM failed to persist uri permission", e)
+            logWarn("failed to persist uri permission", e)
         }
 
         val path = treeUriToPath(uri)
@@ -261,6 +239,7 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, "仅支持主存储目录", Toast.LENGTH_SHORT).show()
             return
         }
+        logDebug("picked dir path=$path")
         setVideoDir(path, uri)
     }
 
@@ -268,6 +247,7 @@ class MainActivity : ComponentActivity() {
         selectedImageUriState.value = uri
         selectedImageNameState.value = getDisplayName(uri) ?: "image"
         generateState.value = ""
+        logDebug("picked image uri=$uri name=${selectedImageNameState.value}")
     }
 
     private fun getDisplayName(uri: Uri): String? {
@@ -339,6 +319,7 @@ class MainActivity : ComponentActivity() {
             editor.putString(KEY_TREE_URI, treeUri.toString())
         }
         editor.apply()
+        logDebug("set video dir=${normalizeDir(dir)} treeUri=$treeUri")
         makePrefsReadable()
         videoDirState.value = normalizeDir(dir)
         expectedResolutionState.value = formatExpectedResolution(readExpectedResolution())
@@ -406,7 +387,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun syncStateWithFiles() {
-        Log.d(application.packageName, "【VCAM】[sync]同步开关状态")
+        logDebug("sync state with files")
 
         if (!hasPermission()) {
             requestPermission()
@@ -422,6 +403,7 @@ class MainActivity : ComponentActivity() {
         playSoundState.value = File(getVideoDir() + FileMode.PLAY_SOUND.fileName).exists()
         forcePrivateDirState.value = File(getVideoDir() + FileMode.FORCE_PRIVATE_DIR.fileName).exists()
         disableToastState.value = File(getVideoDir() + FileMode.DISABLE_TOAST.fileName).exists()
+        debugLogState.value = File(getVideoDir() + FileMode.DEBUG_LOG.fileName).exists()
         updateMissingVideoNotification()
     }
 
@@ -475,6 +457,7 @@ class MainActivity : ComponentActivity() {
         val warnings = mutableListOf<String>()
         if (!videoFile.exists()) {
             errors.add("未找到 virtual.mp4")
+            logWarn("check material: virtual.mp4 missing in ${getVideoDir()}")
         } else {
             val retriever = MediaMetadataRetriever()
             try {
@@ -494,6 +477,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val expected = readExpectedResolution()
+                logDebug("check material: video=${width}x${height} expected=$expected")
                 if (expected == null) {
                     warnings.add(getString(R.string.expected_resolution_missing))
                 } else if (width != null && height != null &&
@@ -512,6 +496,7 @@ class MainActivity : ComponentActivity() {
                 }
             } catch (e: Exception) {
                 errors.add(getString(R.string.video_read_failed, e.message ?: ""))
+                logWarn("check material: failed to read video", e)
             } finally {
                 retriever.release()
             }
@@ -527,6 +512,7 @@ class MainActivity : ComponentActivity() {
             builder.append("\n").append(getString(R.string.check_warning, warnings.joinToString("；")))
         }
         materialCheckState.value = builder.toString()
+        logDebug("check material result=${materialCheckState.value}")
         updateMissingVideoNotification()
     }
 
@@ -573,12 +559,14 @@ class MainActivity : ComponentActivity() {
         val inputFile = File(cacheDir, "vcam_source_image")
         if (!copyUriToFile(uri, inputFile)) {
             generateState.value = getString(R.string.generate_failed, "无法读取图片")
+            logWarn("generate: failed to copy uri to temp file, uri=$uri")
             return
         }
         val target = readExpectedResolution()
         val targetSize = target ?: getImageResolution(uri)
         if (targetSize == null) {
             generateState.value = getString(R.string.generate_failed, "无法读取图片分辨率")
+            logWarn("generate: failed to get image resolution, uri=$uri")
             return
         }
         var width = targetSize.width
@@ -587,13 +575,16 @@ class MainActivity : ComponentActivity() {
         if (height % 2 != 0) height += 1
         val outputFile = File(getVideoDir() + "virtual.mp4")
         val command = buildFfmpegCommand(inputFile.absolutePath, outputFile.absolutePath, width, height, 5)
+        logDebug("generate: target=${width}x${height} source=${targetSize.source} cmd=$command")
         FFmpegKit.executeAsync(command) { session ->
             val returnCode = session.returnCode
             runOnUiThread {
                 if (ReturnCode.isSuccess(returnCode)) {
                     generateState.value = getString(R.string.generate_ok, outputFile.absolutePath)
+                    logDebug("generate: success output=${outputFile.absolutePath}")
                 } else {
                     generateState.value = getString(R.string.generate_failed, returnCode.toString())
+                    logWarn("generate: failed returnCode=$returnCode")
                 }
                 updateMissingVideoNotification()
             }
@@ -650,11 +641,32 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun isDebugEnabled(): Boolean {
+        return File(getVideoDir() + FileMode.DEBUG_LOG.fileName).exists()
+    }
+
+    private fun logDebug(message: String) {
+        if (isDebugEnabled()) {
+            Log.d(TAG, message)
+        }
+    }
+
+    private fun logWarn(message: String, throwable: Throwable? = null) {
+        if (isDebugEnabled()) {
+            if (throwable == null) {
+                Log.w(TAG, message)
+            } else {
+                Log.w(TAG, message, throwable)
+            }
+        }
+    }
+
     private enum class FileMode(val fileName: String) {
         FORCE_SHOW("force_show.jpg"),
         DISABLE("disable.jpg"),
         PLAY_SOUND("no-silent.jpg"),
         FORCE_PRIVATE_DIR("private_dir.jpg"),
-        DISABLE_TOAST("no_toast.jpg");
+        DISABLE_TOAST("no_toast.jpg"),
+        DEBUG_LOG("debug_log.jpg");
     }
 }
