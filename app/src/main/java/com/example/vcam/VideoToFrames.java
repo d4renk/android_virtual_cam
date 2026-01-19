@@ -159,6 +159,8 @@ public class VideoToFrames implements Runnable {
     private void decodeFramesToImage(MediaCodec decoder, MediaExtractor extractor, MediaFormat mediaFormat) {
         boolean is_first = false;
         long startWhen = 0;
+        long firstFrameMs = 0;
+        long lastFrameMs = 0;
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         decoder.configure(mediaFormat, play_surf, null, 0);
         boolean sawInputEOS = false;
@@ -166,6 +168,7 @@ public class VideoToFrames implements Runnable {
         decoder.start();
         final int width = mediaFormat.getInteger(MediaFormat.KEY_WIDTH);
         final int height = mediaFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        HookMain.debugLog("decoder configured width=" + width + " height=" + height + " surface=" + (play_surf != null));
         int outputFrameCount = 0;
         while (!sawOutputEOS && !stopDecode) {
             if (!sawInputEOS) {
@@ -196,6 +199,7 @@ public class VideoToFrames implements Runnable {
                     }
                     if (!is_first) {
                         startWhen = System.currentTimeMillis();
+                        firstFrameMs = startWhen;
                         is_first = true;
                     }
                     if (play_surf == null) {
@@ -225,11 +229,20 @@ public class VideoToFrames implements Runnable {
                         }
                     }
                     decoder.releaseOutputBuffer(outputBufferId, true);
+                    lastFrameMs = System.currentTimeMillis();
                 }
             }
         }
         if (callback != null) {
             callback.onFinishDecode();
+        }
+        if (outputFrameCount > 0 && firstFrameMs > 0 && lastFrameMs >= firstFrameMs) {
+            long durationMs = lastFrameMs - firstFrameMs;
+            double fps = durationMs > 0 ? (outputFrameCount * 1000.0 / durationMs) : 0.0;
+            HookMain.debugLog("decoder done frames=" + outputFrameCount +
+                " durationMs=" + durationMs + " fps=" + String.format(java.util.Locale.US, "%.2f", fps));
+        } else {
+            HookMain.debugLog("decoder done frames=" + outputFrameCount);
         }
     }
 
@@ -355,6 +368,3 @@ enum OutputImageFormat {
         return friendlyName;
     }
 }
-
-
-
