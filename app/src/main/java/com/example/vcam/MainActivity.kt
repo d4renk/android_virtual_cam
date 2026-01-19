@@ -2,65 +2,96 @@ package com.example.vcam
 
 import android.Manifest
 import android.app.AlertDialog
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Color
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.DocumentsContract
+import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.Toast
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.res.Configuration
-import android.graphics.Color
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.CameraEnhance
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.VideoFile
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.vcam.ui.theme.AppTheme
-import java.io.File
-import java.io.IOException
-import android.provider.DocumentsContract
-import android.media.MediaMetadataRetriever
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.ReturnCode
+import com.example.vcam.ui.theme.AppTheme
+import java.io.File
 import java.io.FileOutputStream
-import android.provider.OpenableColumns
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -132,7 +163,7 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             AppTheme {
-                Surface(modifier = Modifier.fillMaxSize()) { MainScreen() }
+                MainScreen()
             }
         }
         syncStateWithFiles()
@@ -142,143 +173,371 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         val isNight = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
+                Configuration.UI_MODE_NIGHT_YES
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isNight
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun MainScreen() {
-        val clipboard = LocalClipboardManager.current
-        val context = LocalContext.current
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Top
+        val scrollState = rememberScrollState()
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.CameraEnhance,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(id = R.string.app_name),
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(scrollState)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Section: Working Directory
+                DirectoryCard()
+
+                // Section: Resolution Info
+                if (expectedResolutionState.value.isNotBlank()) {
+                    ResolutionInfoCard()
+                }
+
+                // Section: Controls
+                SettingsCard()
+
+                // Section: Tools (Check Material & Generate Video)
+                ToolsCard()
+
+                // Section: Debug
+                DebugCard()
+                
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+
+    @Composable
+    private fun DirectoryCard() {
+        ElevatedCard(
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            )
         ) {
-            Text(text = stringResource(id = R.string.current_dir, videoDirState.value))
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Button(onClick = { pickDirLauncher.launch(null) }) {
-                    Text(text = stringResource(id = R.string.pick_dir))
-                }
-                Button(onClick = { openVideoDir() }) {
-                    Text(text = stringResource(id = R.string.open_dir))
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            if (expectedResolutionState.value.isNotBlank()) {
-                Text(text = expectedResolutionState.value)
+            Column(modifier = Modifier.padding(16.dp)) {
+                LabelText(text = "工作目录", icon = Icons.Default.Folder)
                 Spacer(modifier = Modifier.height(8.dp))
-            }
-            Button(onClick = { checkMaterial() }, modifier = Modifier.fillMaxWidth()) {
-                Text(text = stringResource(id = R.string.check_material))
-            }
-            if (materialCheckState.value.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = materialCheckState.value)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Button(onClick = { pickImageLauncher.launch("image/*") }) {
-                    Text(text = stringResource(id = R.string.pick_image))
-                }
-                Button(onClick = { generateVideoFromImage() }) {
-                    Text(text = stringResource(id = R.string.generate_video))
-                }
-            }
-            if (selectedImageNameState.value.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = stringResource(id = R.string.selected_image, selectedImageNameState.value))
-            }
-            if (generateState.value.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = generateState.value)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            SwitchRow(
-                textRes = R.string.switch1,
-                checked = forceShowState.value,
-                onCheckedChange = { updateToggle(FileMode.FORCE_SHOW, it) }
-            )
-            SwitchRow(
-                textRes = R.string.switch2,
-                checked = disableState.value,
-                onCheckedChange = { updateToggle(FileMode.DISABLE, it) }
-            )
-            SwitchRow(
-                textRes = R.string.switch3,
-                checked = playSoundState.value,
-                onCheckedChange = { updateToggle(FileMode.PLAY_SOUND, it) }
-            )
-            SwitchRow(
-                textRes = R.string.switch4,
-                checked = forcePrivateDirState.value,
-                onCheckedChange = { updateToggle(FileMode.FORCE_PRIVATE_DIR, it) }
-            )
-            SwitchRow(
-                textRes = R.string.switch5,
-                checked = disableToastState.value,
-                onCheckedChange = { updateToggle(FileMode.DISABLE_TOAST, it) }
-            )
-            SwitchRow(
-                textRes = R.string.switch6,
-                checked = debugLogState.value,
-                onCheckedChange = { updateToggle(FileMode.DEBUG_LOG, it) }
-            )
-            if (debugLogState.value) {
+                Text(
+                    text = videoDirState.value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(text = stringResource(id = R.string.debug_logs_title))
                     Button(
-                        onClick = {
-                            clipboard.setText(AnnotatedString(debugLogTextState.value))
-                            Toast.makeText(context, R.string.logs_copied, Toast.LENGTH_SHORT).show()
-                        }
+                        onClick = { pickDirLauncher.launch(null) },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Text(text = stringResource(id = R.string.copy_logs))
+                        Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(id = R.string.pick_dir))
                     }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                SelectionContainer {
-                    Text(
-                        text = if (debugLogTextState.value.isBlank()) {
-                            stringResource(id = R.string.debug_logs_empty)
-                        } else {
-                            debugLogTextState.value
-                        },
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace
-                    )
+                    OutlinedButton(
+                        onClick = { openVideoDir() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(id = R.string.open_dir))
+                    }
                 }
             }
         }
     }
 
     @Composable
-    private fun SwitchRow(
-        textRes: Int,
+    private fun ResolutionInfoCard() {
+        ElevatedCard(
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = expectedResolutionState.value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun SettingsCard() {
+        ElevatedCard {
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                LabelText(text = "功能配置", icon = Icons.Default.Settings, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp))
+                
+                SettingSwitchItem(
+                    title = stringResource(R.string.switch2), // Disable module
+                    checked = disableState.value,
+                    onCheckedChange = { updateToggle(FileMode.DISABLE, it) }
+                )
+                SettingSwitchItem(
+                    title = stringResource(R.string.switch3), // Play sound
+                    checked = playSoundState.value,
+                    onCheckedChange = { updateToggle(FileMode.PLAY_SOUND, it) }
+                )
+                SettingSwitchItem(
+                    title = stringResource(R.string.switch5), // Disable toast
+                    checked = disableToastState.value,
+                    onCheckedChange = { updateToggle(FileMode.DISABLE_TOAST, it) }
+                )
+                SettingSwitchItem(
+                    title = stringResource(R.string.switch4), // Force private dir
+                    checked = forcePrivateDirState.value,
+                    onCheckedChange = { updateToggle(FileMode.FORCE_PRIVATE_DIR, it) }
+                )
+                SettingSwitchItem(
+                    title = stringResource(R.string.switch1), // Force show permission
+                    checked = forceShowState.value,
+                    onCheckedChange = { updateToggle(FileMode.FORCE_SHOW, it) }
+                )
+                SettingSwitchItem(
+                    title = stringResource(R.string.switch6), // Debug log
+                    checked = debugLogState.value,
+                    onCheckedChange = { updateToggle(FileMode.DEBUG_LOG, it) }
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun ToolsCard() {
+        ElevatedCard {
+            Column(modifier = Modifier.padding(16.dp)) {
+                LabelText(text = "素材工具", icon = Icons.Default.VideoFile)
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Material Check
+                Button(
+                    onClick = { checkMaterial() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(id = R.string.check_material))
+                }
+                
+                AnimatedVisibility(visible = materialCheckState.value.isNotBlank()) {
+                    Column {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = materialCheckState.value,
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Video Generator
+                Text(
+                    text = "视频生成器",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { pickImageLauncher.launch("image/*") },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(id = R.string.pick_image))
+                    }
+                    Button(
+                        onClick = { generateVideoFromImage() },
+                        modifier = Modifier.weight(1f),
+                        enabled = selectedImageUriState.value != null
+                    ) {
+                        Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(id = R.string.generate_video))
+                    }
+                }
+                
+                if (selectedImageNameState.value.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(id = R.string.selected_image, selectedImageNameState.value),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                if (generateState.value.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                     Surface(
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text(
+                            text = generateState.value,
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun DebugCard() {
+        AnimatedVisibility(
+            visible = debugLogState.value,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        LabelText(text = stringResource(id = R.string.debug_logs_title), icon = Icons.Default.BugReport)
+                        val clipboard = LocalClipboardManager.current
+                        val context = LocalContext.current
+                        IconButton(
+                            onClick = {
+                                clipboard.setText(AnnotatedString(debugLogTextState.value))
+                                Toast.makeText(context, R.string.logs_copied, Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = stringResource(id = R.string.copy_logs))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SelectionContainer {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.small,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        ) {
+                            Text(
+                                text = if (debugLogTextState.value.isBlank()) {
+                                    stringResource(id = R.string.debug_logs_empty)
+                                } else {
+                                    debugLogTextState.value
+                                },
+                                fontSize = 11.sp,
+                                lineHeight = 14.sp,
+                                fontFamily = FontFamily.Monospace,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(8.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun SettingSwitchItem(
+        title: String,
         checked: Boolean,
         onCheckedChange: (Boolean) -> Unit
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(id = textRes),
-                modifier = Modifier.weight(1f)
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange
+            )
+        }
+    }
+
+    @Composable
+    private fun LabelText(text: String, icon: ImageVector, modifier: Modifier = Modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 
@@ -441,9 +700,9 @@ class MainActivity : ComponentActivity() {
     private fun hasPermission(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) !=
-                PackageManager.PERMISSION_DENIED &&
-                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-                PackageManager.PERMISSION_DENIED
+                    PackageManager.PERMISSION_DENIED &&
+                    checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                    PackageManager.PERMISSION_DENIED
         }
         return true
     }
@@ -698,9 +957,9 @@ class MainActivity : ComponentActivity() {
     ): String {
         val filter = "scale=${width}:${height}:flags=lanczos"
         return "-y -loop 1 -i \"$inputPath\" -t $durationSeconds -r 30 -vf \"$filter\" " +
-            "-c:v libx264 -crf 18 -preset veryfast -pix_fmt yuv420p " +
-            "-colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range pc " +
-            "\"$outputPath\""
+                "-c:v libx264 -crf 18 -preset veryfast -pix_fmt yuv420p " +
+                "-colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range pc " +
+                "\"$outputPath\""
     }
 
     private fun ensureVideoDirExists() {
