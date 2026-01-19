@@ -1,13 +1,20 @@
-name: Build Debug APK
+name: Build and Release Debug APK
 
 on:
   push:
     branches:
-      - '**'
+      - master
+
+permissions:
+  contents: write
+  packages: write # Needed for GitHub Packages, though not explicitly used here.
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      apk_path: ${{ steps.apk.outputs.apk_path }}
+      apk_name: ${{ steps.apk.outputs.apk_name }}
     env:
       PACKAGE_NAME: com.virtualcam.debug
       KEYSTORE_B64: |
@@ -78,13 +85,37 @@ jobs:
             exit 1
           fi
           mkdir -p build-artifacts
-          TARGET_APK=build-artifacts/virtualcam-debug.apk
-          cp "$APK_PATH" "$TARGET_APK"
-          echo "apk_path=$TARGET_APK" >> "$GITHUB_OUTPUT"
+          APK_FILE_NAME="app-debug.apk"
+          cp "$APK_PATH" "build-artifacts/$APK_FILE_NAME"
+          echo "apk_path=build-artifacts/$APK_FILE_NAME" >> "$GITHUB_OUTPUT"
+          echo "apk_name=$APK_FILE_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virtualcam-debug-${{ github.sha }}.apk
+          name: debug-apk-artifact
           path: ${{ steps.apk.outputs.apk_path }}
           compression-level: 0
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: debug-apk-artifact
+          path: artifacts
+
+      - name: Create Release and Upload Asset
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v4.4.${{ github.run_number }}
+          name: Release v4.4.${{ github.run_number }}
+          body: |
+            Automated debug APK release.
+            Commit SHA: ${{ github.sha }}
+            Message: ${{ github.event.head_commit.message }}
+          files: artifacts/app-debug.apk
