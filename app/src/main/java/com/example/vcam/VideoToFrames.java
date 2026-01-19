@@ -29,9 +29,6 @@ public class VideoToFrames implements Runnable {
     private static final int COLOR_FormatI420 = 1;
     private static final int COLOR_FormatNV21 = 2;
 
-    private static byte[] reusableBuffer;
-    private static int reusableBufferSize;
-    private static byte[] reusableRowData;
 
     private final int decodeColorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 
@@ -282,67 +279,13 @@ public class VideoToFrames implements Runnable {
         if (!isImageFormatSupported(image)) {
             throw new RuntimeException("can't convert Image to byte array, format " + image.getFormat());
         }
-        if (colorFormat == COLOR_FormatNV21 && YuvNative.isLoaded()) {
-            byte[] nativeData = getDataFromImageNative(image);
-            if (nativeData != null) {
-                return nativeData;
-            }
-        }
-        return getDataFromImageJava(image, colorFormat);
-    }
-
-    private static byte[] getDataFromImageNative(Image image) {
-        Rect crop = image.getCropRect();
-        int format = image.getFormat();
-        int width = crop.width();
-        int height = crop.height();
-        Image.Plane[] planes = image.getPlanes();
-        if (planes.length < 3) {
-            return null;
-        }
-
-        int dataSize = width * height * ImageFormat.getBitsPerPixel(format) / 8;
-        if (reusableBuffer == null || reusableBufferSize != dataSize) {
-            reusableBuffer = new byte[dataSize];
-            reusableBufferSize = dataSize;
-        }
-
-        int yRowStride = planes[0].getRowStride();
-        int yPixelStride = planes[0].getPixelStride();
-        int uRowStride = planes[1].getRowStride();
-        int uPixelStride = planes[1].getPixelStride();
-        int vRowStride = planes[2].getRowStride();
-        int vPixelStride = planes[2].getPixelStride();
-        if (yPixelStride != 1) {
-            return null;
-        }
-
-        int yOffset = yRowStride * crop.top + yPixelStride * crop.left;
-        int uvShift = 1;
-        int uOffset = uRowStride * (crop.top >> uvShift) + uPixelStride * (crop.left >> uvShift);
-        int vOffset = vRowStride * (crop.top >> uvShift) + vPixelStride * (crop.left >> uvShift);
-
-        int result = YuvNative.yuv420ToNv21(
-                planes[0].getBuffer(), yRowStride, yOffset,
-                planes[1].getBuffer(), uRowStride, uPixelStride, uOffset,
-                planes[2].getBuffer(), vRowStride, vPixelStride, vOffset,
-                width, height,
-                reusableBuffer);
-        return result == 0 ? reusableBuffer : null;
-    }
-
-    private static byte[] getDataFromImageJava(Image image, int colorFormat) {
         Rect crop = image.getCropRect();
         int format = image.getFormat();
         int width = crop.width();
         int height = crop.height();
         Image.Plane[] planes = image.getPlanes();
         byte[] data = new byte[width * height * ImageFormat.getBitsPerPixel(format) / 8];
-        int rowDataSize = planes[0].getRowStride();
-        if (reusableRowData == null || reusableRowData.length < rowDataSize) {
-            reusableRowData = new byte[rowDataSize];
-        }
-        byte[] rowData = reusableRowData;
+        byte[] rowData = new byte[planes[0].getRowStride()];
         if (VERBOSE) Log.v(TAG, "get data from " + planes.length + " planes");
         int channelOffset = 0;
         int outputStride = 1;
