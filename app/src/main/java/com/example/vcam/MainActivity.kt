@@ -176,7 +176,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         val file = File(
-            Environment.getExternalStorageDirectory().absolutePath + "/DCIM/Camera1/" + mode.fileName
+            Environment.getExternalStorageDirectory().absolutePath + "/Download/" + mode.fileName
         )
         if (file.exists() != enabled) {
             if (enabled) {
@@ -236,7 +236,7 @@ class MainActivity : ComponentActivity() {
             requestPermission()
         } else {
             val cameraDir = File(
-                Environment.getExternalStorageDirectory().absolutePath + "/DCIM/Camera1"
+                Environment.getExternalStorageDirectory().absolutePath + "/Download"
             )
             if (!cameraDir.exists()) {
                 cameraDir.mkdir()
@@ -259,7 +259,7 @@ class MainActivity : ComponentActivity() {
 
         val file: File
             get() = File(
-                Environment.getExternalStorageDirectory().absolutePath + "/DCIM/Camera1/" + fileName
+                Environment.getExternalStorageDirectory().absolutePath + "/Download/" + fileName
             )
     }
 }
