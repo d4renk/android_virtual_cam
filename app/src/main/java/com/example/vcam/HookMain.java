@@ -74,6 +74,7 @@ public class HookMain implements IXposedHookLoadPackage {
     private static final String PREFS_NAME = "vcam_prefs";
     private static final String KEY_VIDEO_DIR = "video_dir";
     private static final String DEFAULT_VIDEO_DIR = "/storage/emulated/0/Download/Camera1/";
+    private static final String DEBUG_LOG_FILE = "debug_log.txt";
 
     public static String video_path = DEFAULT_VIDEO_DIR;
     public static boolean use_private_dir = false;
@@ -114,7 +115,34 @@ public class HookMain implements IXposedHookLoadPackage {
 
     public static void debugLog(String message) {
         if (isDebugEnabled()) {
+            String line = buildLogLine("D", message);
             XposedBridge.log("【VCAM】【debug】" + message);
+            appendDebugLogToFile(line);
+        }
+    }
+
+    private static String buildLogLine(String level, String message) {
+        java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.US);
+        String timestamp = format.format(System.currentTimeMillis());
+        return timestamp + " [" + level + "] " + message;
+    }
+
+    private static void appendDebugLogToFile(String line) {
+        try {
+            String dirPath = getActiveVideoDir();
+            if (dirPath == null || dirPath.isEmpty()) {
+                return;
+            }
+            File dir = new File(dirPath);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            FileOutputStream fos = new FileOutputStream(new File(dir, DEBUG_LOG_FILE), true);
+            fos.write((line + "\n").getBytes());
+            fos.flush();
+            fos.close();
+        } catch (Throwable t) {
+            XposedBridge.log("【VCAM】[debug-log-file]" + t);
         }
     }
 
