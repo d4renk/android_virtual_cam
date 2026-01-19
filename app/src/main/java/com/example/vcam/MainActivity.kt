@@ -562,20 +562,25 @@ class MainActivity : ComponentActivity() {
             logWarn("generate: failed to copy uri to temp file, uri=$uri")
             return
         }
-        val target = readExpectedResolution()
-        val targetSize = target ?: getImageResolution(uri)
-        if (targetSize == null) {
+        val imageSize = getImageResolution(uri)
+        if (imageSize == null) {
             generateState.value = getString(R.string.generate_failed, "无法读取图片分辨率")
             logWarn("generate: failed to get image resolution, uri=$uri")
             return
         }
-        var width = targetSize.width
-        var height = targetSize.height
+        var width = imageSize.width
+        var height = imageSize.height
+        val maxDimension = 1920
+        if (width > maxDimension || height > maxDimension) {
+            val scale = minOf(maxDimension.toDouble() / width, maxDimension.toDouble() / height)
+            width = (width * scale).toInt()
+            height = (height * scale).toInt()
+        }
         if (width % 2 != 0) width += 1
         if (height % 2 != 0) height += 1
         val outputFile = File(getVideoDir() + "virtual.mp4")
-        val command = buildFfmpegCommand(inputFile.absolutePath, outputFile.absolutePath, width, height, 5)
-        logDebug("generate: target=${width}x${height} source=${targetSize.source} cmd=$command")
+        val command = buildFfmpegCommand(inputFile.absolutePath, outputFile.absolutePath, width, height, 1)
+        logDebug("generate: target=${width}x${height} source=image cmd=$command")
         FFmpegKit.executeAsync(command) { session ->
             val returnCode = session.returnCode
             runOnUiThread {
@@ -629,9 +634,11 @@ class MainActivity : ComponentActivity() {
         height: Int,
         durationSeconds: Int
     ): String {
-        val filter = "scale=${width}:${height}:force_original_aspect_ratio=decrease," +
-            "pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2"
-        return "-y -loop 1 -i \"$inputPath\" -t $durationSeconds -r 30 -vf \"$filter\" -pix_fmt yuv420p \"$outputPath\""
+        val filter = "scale=${width}:${height}:flags=lanczos"
+        return "-y -loop 1 -i \"$inputPath\" -t $durationSeconds -r 30 -vf \"$filter\" " +
+            "-c:v libx264 -crf 18 -preset veryfast -pix_fmt yuv420p " +
+            "-colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range pc " +
+            "\"$outputPath\""
     }
 
     private fun ensureVideoDirExists() {
