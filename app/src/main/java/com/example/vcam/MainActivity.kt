@@ -87,6 +87,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegKitConfig
+import com.arthenica.ffmpegkit.Level
 import com.arthenica.ffmpegkit.ReturnCode
 import com.example.vcam.ui.theme.AppTheme
 import java.io.File
@@ -124,6 +126,8 @@ class MainActivity : ComponentActivity() {
     private val selectedImageNameState = mutableStateOf("")
     private val selectedImageUriState = mutableStateOf<Uri?>(null)
     private val generateState = mutableStateOf("")
+    private val ffmpegStatsState = mutableStateOf("")
+    private val lastFfmpegErrorState = mutableStateOf("")
     private val expectedResolutionState = mutableStateOf("")
     private val debugLogBuffer = ArrayDeque<String>()
     private val logTimeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
@@ -150,6 +154,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setupFfmpegLogging()
         setupStatusBar()
         pickDirLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
             if (it != null) {
@@ -167,6 +172,36 @@ class MainActivity : ComponentActivity() {
             }
         }
         syncStateWithFiles()
+    }
+
+    private fun setupFfmpegLogging() {
+        FFmpegKitConfig.enableLogCallback { log ->
+            val message = log.message?.trim()
+            if (!message.isNullOrBlank()) {
+                logDebug("ffmpeg: $message")
+            }
+            if (log.level == Level.AV_LOG_ERROR ||
+                log.level == Level.AV_LOG_FATAL ||
+                log.level == Level.AV_LOG_PANIC
+            ) {
+                lastFfmpegErrorState.value = message ?: ""
+            }
+        }
+        FFmpegKitConfig.enableStatisticsCallback { stats ->
+            val timeSeconds = stats.time / 1000.0
+            val text = String.format(
+                Locale.US,
+                "time=%.2fs fps=%.1f frame=%d speed=%.2fx size=%d",
+                timeSeconds,
+                stats.videoFps,
+                stats.videoFrameNumber,
+                stats.speed,
+                stats.size
+            )
+            runOnUiThread {
+                ffmpegStatsState.value = text
+            }
+        }
     }
 
     private fun setupStatusBar() {
@@ -430,6 +465,21 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.padding(12.dp),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                }
+
+                if (ffmpegStatsState.value.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text(
+                            text = ffmpegStatsState.value,
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace
                         )
                     }
                 }
@@ -877,6 +927,8 @@ class MainActivity : ComponentActivity() {
         }
         ensureVideoDirExists()
         generateState.value = getString(R.string.generate_in_progress)
+        ffmpegStatsState.value = ""
+        lastFfmpegErrorState.value = ""
         val inputFile = File(cacheDir, "vcam_source_image")
         if (!copyUriToFile(uri, inputFile)) {
             generateState.value = getString(R.string.generate_failed, "无法读取图片")
@@ -909,7 +961,13 @@ class MainActivity : ComponentActivity() {
                     generateState.value = getString(R.string.generate_ok, outputFile.absolutePath)
                     logDebug("generate: success output=${outputFile.absolutePath}")
                 } else {
-                    generateState.value = getString(R.string.generate_failed, returnCode.toString())
+                    val errorDetail = when {
+                        lastFfmpegErrorState.value.isNotBlank() -> lastFfmpegErrorState.value
+                        !session.failStackTrace.isNullOrBlank() -> session.failStackTrace
+                        !session.allLogsAsString.isNullOrBlank() -> session.allLogsAsString
+                        else -> returnCode.toString()
+                    }
+                    generateState.value = getString(R.string.generate_failed, errorDetail)
                     logWarn("generate: failed returnCode=$returnCode")
                 }
                 updateMissingVideoNotification()
