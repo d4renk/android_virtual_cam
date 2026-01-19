@@ -8,7 +8,7 @@ A virtual camera based on Xposed
 
 ## Supported platform
 
-- Android 5.0+
+- Android 7.0+
 
 ## Usage
 
@@ -16,25 +16,25 @@ A virtual camera based on Xposed
 
 2. In system Setting, authorize target to access local storage, and force stop the app. If the app does not request this permission, see step3.
 
-3. open target app, if the app does not have the permission to access local storage. There will be a toast message showing that `Camera1` directory has been redirect to app's private directory `/[INTERNEL_STORAGE]/Android/data/[package_name]/files/Camera1/`. If there isn't the message, the default `Camera1` directory is `/[INTERNEL_STORAGE]/DCIM/Camera1/`. If the directory doesn't exist. Please create it by yourself.
+3. Open target app, if the app does not have the permission to access local storage. There will be a toast message showing that `Camera1` directory has been redirected to app's private directory `/[INTERNAL_STORAGE]/Android/data/[package_name]/files/Camera1/`. If there isn't the message, the default `Camera1` directory is `/[INTERNAL_STORAGE]/Download/Camera1/`. If the directory doesn't exist, please create it or use the app to pick a directory.
 
 > Attention: `Camera1` in the private directory only works for single app.
 
-4. Open the camera in target app. There will be a toast message showing the resolution (宽width: , 高height:) . And you need to adjust the replacing video's resolution to make them same. Name it as `virtual.mp4`, put it under `Camera1` directory.
+4. Open the camera in target app. There will be a toast message showing the resolution (width/height). Match the replacing video's resolution. Name it `virtual.mp4`, put it under `Camera1` directory. You can also pick a photo in the app and generate `virtual.mp4` automatically.
 
 5. If there is a toast message when you take photos in app ("发现拍照")，it shows the photo's resolution. You need to prepare a photo which has the same resolution. Name it as `1000.bmp` . Put it under `Camera1` directory. (it support other image format renamed to bmp ). If there isn't a toast message , `1000.bmp` will have nothing to do with replacing capture.
 
-6. If you need to play video's sound, create `./DCIM/Camera1/Camera1/virtual.mp4` under `Camera1` directory. (Global real-time effective)
+6. If you need to play video sound, create `no-silent.jpg` under the current `Camera1` directory. (Global real-time effective)
 
-7. If you need to turn off the module temporarily, create `./DCIM/Camera1/Camera1/virtual.mp4` under `Camera1` directory. (Global real-time effective)
+7. If you need to turn off the module temporarily, create `disable.jpg` under the current `Camera1` directory. (Global real-time effective)
 
-8. If you find toast messages annoying, you can create a `no_toast.jpg` file in the `/[INTERNEL_STORAGE]/DCIM/Camera1/` directory. (Global real-time effective)
+8. If you find toast messages annoying, you can create a `no_toast.jpg` file in the current `Camera1` directory. (Global real-time effective)
 
-9. The directory redirection message is displayed only once by default. If you miss the toast message of directory redirection, you can create a `force_show.jpg` file in the `/[INTERNEL_STORAGE]/DCIM/Camera1/` directory to override the default setting. (Global real-time effective)
+9. The directory redirection message is displayed only once by default. If you miss the toast message, create a `force_show.jpg` file in the current `Camera1` directory to show it again. (Global real-time effective)
 
-10. If you need to allocate videos for each application, you can create `private_dir.jpg` in the `/[INTERNEL_STORAGE]/DCIM/Camera1/` directory to enforce apps use private directory. (Global real-time effective)
+10. If you need to allocate videos for each application, you can create `private_dir.jpg` in the current `Camera1` directory to enforce apps use private directory. (Global real-time effective)
 
-> Note: the configuration of 6 ~ 10 are in the application. You can quickly configure them in the application or create files manually.
+> Note: the configuration of 6 ~ 10 are in the application. You can quickly configure them in the application or create files manually. The app also provides a material checker and a persistent notification if `virtual.mp4` is missing.
 
 ## FAQ
 
