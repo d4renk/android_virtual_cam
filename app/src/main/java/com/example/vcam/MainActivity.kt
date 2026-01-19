@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -39,7 +40,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vcam.ui.theme.AppTheme
@@ -55,6 +60,8 @@ import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.ReturnCode
 import java.io.FileOutputStream
 import android.provider.OpenableColumns
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -66,6 +73,7 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_VIDEO_DIR = "/storage/emulated/0/Download/Camera1/"
         private const val CHANNEL_ID = "vcam_status"
         private const val NOTIFICATION_ID = 1001
+        private const val MAX_DEBUG_LOG_LINES = 200
     }
 
     private lateinit var pickDirLauncher: ActivityResultLauncher<Uri?>
@@ -77,12 +85,15 @@ class MainActivity : ComponentActivity() {
     private val forcePrivateDirState = mutableStateOf(false)
     private val disableToastState = mutableStateOf(false)
     private val debugLogState = mutableStateOf(false)
+    private val debugLogTextState = mutableStateOf("")
     private val videoDirState = mutableStateOf(DEFAULT_VIDEO_DIR)
     private val materialCheckState = mutableStateOf("")
     private val selectedImageNameState = mutableStateOf("")
     private val selectedImageUriState = mutableStateOf<Uri?>(null)
     private val generateState = mutableStateOf("")
     private val expectedResolutionState = mutableStateOf("")
+    private val debugLogBuffer = ArrayDeque<String>()
+    private val logTimeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -135,6 +146,8 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun MainScreen() {
+        val clipboard = LocalClipboardManager.current
+        val context = LocalContext.current
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -212,6 +225,36 @@ class MainActivity : ComponentActivity() {
                 checked = debugLogState.value,
                 onCheckedChange = { updateToggle(FileMode.DEBUG_LOG, it) }
             )
+            if (debugLogState.value) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = stringResource(id = R.string.debug_logs_title))
+                    Button(
+                        onClick = {
+                            clipboard.setText(AnnotatedString(debugLogTextState.value))
+                            Toast.makeText(context, R.string.logs_copied, Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Text(text = stringResource(id = R.string.copy_logs))
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                SelectionContainer {
+                    Text(
+                        text = if (debugLogTextState.value.isBlank()) {
+                            stringResource(id = R.string.debug_logs_empty)
+                        } else {
+                            debugLogTextState.value
+                        },
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+            }
         }
     }
 
@@ -358,6 +401,9 @@ class MainActivity : ComponentActivity() {
             } else {
                 file.delete()
             }
+        }
+        if (mode == FileMode.DEBUG_LOG && !enabled) {
+            clearDebugLog()
         }
         syncStateWithFiles()
     }
@@ -667,18 +713,40 @@ class MainActivity : ComponentActivity() {
 
     private fun logDebug(message: String) {
         if (isDebugEnabled()) {
+            appendDebugLog("D", message)
             Log.d(TAG, message)
         }
     }
 
     private fun logWarn(message: String, throwable: Throwable? = null) {
         if (isDebugEnabled()) {
+            val detail = if (throwable == null) {
+                message
+            } else {
+                val error = throwable.message ?: throwable.javaClass.simpleName
+                "$message ($error)"
+            }
+            appendDebugLog("W", detail)
             if (throwable == null) {
                 Log.w(TAG, message)
             } else {
                 Log.w(TAG, message, throwable)
             }
         }
+    }
+
+    private fun appendDebugLog(level: String, message: String) {
+        val timestamp = logTimeFormat.format(System.currentTimeMillis())
+        debugLogBuffer.addLast("$timestamp [$level] $message")
+        while (debugLogBuffer.size > MAX_DEBUG_LOG_LINES) {
+            debugLogBuffer.removeFirst()
+        }
+        debugLogTextState.value = debugLogBuffer.joinToString("\n")
+    }
+
+    private fun clearDebugLog() {
+        debugLogBuffer.clear()
+        debugLogTextState.value = ""
     }
 
     private enum class FileMode(val fileName: String) {

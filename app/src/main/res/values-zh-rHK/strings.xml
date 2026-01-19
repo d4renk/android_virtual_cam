@@ -6,6 +6,10 @@
     <string name="switch4">強制每個應用程序使用私有目錄（無論許可權如何）</string>
     <string name="switch5">關閉提示消息</string>
     <string name="switch6">開啟除錯日誌</string>
+    <string name="debug_logs_title">除錯日誌</string>
+    <string name="copy_logs">複製日誌</string>
+    <string name="logs_copied">日誌已複製</string>
+    <string name="debug_logs_empty">暫無日誌</string>
     <string name="permission_lack_warn">無許可權</string>
     <string name="permission_description">訪問本地目錄的許可權用於設定設定檔，如果拒絕，您需要手動設定設定檔。</string>
     <string name="positive">確定</string>
