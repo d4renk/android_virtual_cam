@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
         private const val CHANNEL_ID = "vcam_status"
         private const val NOTIFICATION_ID = 1001
         private const val MAX_DEBUG_LOG_LINES = 200
+        private const val DEBUG_LOG_FILE = "debug_log.txt"
     }
 
     private lateinit var pickDirLauncher: ActivityResultLauncher<Uri?>
@@ -737,16 +738,31 @@ class MainActivity : ComponentActivity() {
 
     private fun appendDebugLog(level: String, message: String) {
         val timestamp = logTimeFormat.format(System.currentTimeMillis())
-        debugLogBuffer.addLast("$timestamp [$level] $message")
+        val line = "$timestamp [$level] $message"
+        debugLogBuffer.addLast(line)
         while (debugLogBuffer.size > MAX_DEBUG_LOG_LINES) {
             debugLogBuffer.removeFirst()
         }
         debugLogTextState.value = debugLogBuffer.joinToString("\n")
+        appendDebugLogToFile(line)
     }
 
     private fun clearDebugLog() {
         debugLogBuffer.clear()
         debugLogTextState.value = ""
+        val file = File(getVideoDir() + DEBUG_LOG_FILE)
+        if (file.exists()) {
+            file.delete()
+        }
+    }
+
+    private fun appendDebugLogToFile(line: String) {
+        try {
+            ensureVideoDirExists()
+            val file = File(getVideoDir() + DEBUG_LOG_FILE)
+            file.appendText(line + "\n")
+        } catch (_: Exception) {
+        }
     }
 
     private enum class FileMode(val fileName: String) {
