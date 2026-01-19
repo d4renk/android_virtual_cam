@@ -3,7 +3,12 @@ package com.example.vcam;
 
 import android.Manifest;
 import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -75,6 +80,9 @@ public class HookMain implements IXposedHookLoadPackage {
     private static final String KEY_VIDEO_DIR = "video_dir";
     private static final String DEFAULT_VIDEO_DIR = "/storage/emulated/0/Download/Camera1/";
     private static final String DEBUG_LOG_FILE = "debug_log.txt";
+    private static final String NOTIFICATION_CHANNEL_ID = "vcam_host_status";
+    private static final int HOST_NOTIFICATION_ID = 2101;
+    private static volatile boolean hostNotificationShown = false;
 
     public static String video_path = DEFAULT_VIDEO_DIR;
     public static boolean use_private_dir = false;
@@ -379,6 +387,10 @@ public class HookMain implements IXposedHookLoadPackage {
                 if (param.args[0] instanceof Application) {
                     try {
                         toast_content = ((Application) param.args[0]).getApplicationContext();
+                        if (!hostNotificationShown && !BuildConfig.APPLICATION_ID.equals(lpparam.packageName)) {
+                            hostNotificationShown = true;
+                            postHostNotification(toast_content, lpparam.packageName);
+                        }
                     } catch (Exception ee) {
                         XposedBridge.log("【VCAM】" + ee.toString());
                     }
@@ -784,6 +796,54 @@ public class HookMain implements IXposedHookLoadPackage {
 
                     }
                 });
+    }
+
+    private static void postHostNotification(Context hostContext, String hostPackage) {
+        if (hostContext == null) {
+            return;
+        }
+        Context moduleContext;
+        try {
+            moduleContext = hostContext.createPackageContext(
+                BuildConfig.APPLICATION_ID,
+                Context.CONTEXT_IGNORE_SECURITY | Context.CONTEXT_INCLUDE_CODE
+            );
+        } catch (Throwable t) {
+            XposedBridge.log("【VCAM】[notify-context]" + t);
+            return;
+        }
+        NotificationManager manager =
+            (NotificationManager) hostContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager == null) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                "VCAM Host",
+                NotificationManager.IMPORTANCE_LOW
+            );
+            manager.createNotificationChannel(channel);
+        }
+        Intent openIntent = new Intent();
+        openIntent.setClassName(BuildConfig.APPLICATION_ID, "com.example.vcam.MainActivity");
+        openIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent openPending = PendingIntent.getActivity(
+            hostContext,
+            0,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+            ? new Notification.Builder(hostContext, NOTIFICATION_CHANNEL_ID)
+            : new Notification.Builder(hostContext);
+        builder.setSmallIcon(android.R.drawable.ic_menu_camera)
+            .setContentTitle("VCAM 模块")
+            .setContentText("来自宿主：" + hostPackage)
+            .setContentIntent(openPending)
+            .setAutoCancel(true)
+            .addAction(android.R.drawable.ic_menu_view, "打开模块", openPending);
+        manager.notify(HOST_NOTIFICATION_ID, builder.build());
     }
 
     private void process_camera2_play() {
