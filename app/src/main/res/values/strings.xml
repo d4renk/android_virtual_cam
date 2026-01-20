@@ -9,7 +9,9 @@
     <string name="switch6">Enable debug logging</string>
     <string name="debug_logs_title">Debug logs</string>
     <string name="copy_logs">Copy logs</string>
+    <string name="clear_logs">Clear logs</string>
     <string name="logs_copied">Logs copied</string>
+    <string name="logs_cleared">Logs cleared</string>
     <string name="debug_logs_empty">No logs yet</string>
     <string name="permission_lack_warn">Missing permissions</string>
     <string name="permission_description">The permission to access local storage is used to set up configuration files. If refused you need to set up file manually.</string>

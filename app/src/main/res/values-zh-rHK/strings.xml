@@ -8,7 +8,9 @@
     <string name="switch6">開啟除錯日誌</string>
     <string name="debug_logs_title">除錯日誌</string>
     <string name="copy_logs">複製日誌</string>
+    <string name="clear_logs">清除日誌</string>
     <string name="logs_copied">日誌已複製</string>
+    <string name="logs_cleared">日誌已清除</string>
     <string name="debug_logs_empty">暫無日誌</string>
     <string name="permission_lack_warn">無許可權</string>
     <string name="permission_description">訪問本地目錄的許可權用於設定設定檔，如果拒絕，您需要手動設定設定檔。</string>

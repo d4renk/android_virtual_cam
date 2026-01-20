@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CameraEnhance
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
@@ -508,13 +509,23 @@ class MainActivity : ComponentActivity() {
                         LabelText(text = stringResource(id = R.string.debug_logs_title), icon = Icons.Default.BugReport)
                         val clipboard = LocalClipboardManager.current
                         val context = LocalContext.current
-                        IconButton(
-                            onClick = {
-                                clipboard.setText(AnnotatedString(debugLogTextState.value))
-                                Toast.makeText(context, R.string.logs_copied, Toast.LENGTH_SHORT).show()
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    clipboard.setText(AnnotatedString(debugLogTextState.value))
+                                    Toast.makeText(context, R.string.logs_copied, Toast.LENGTH_SHORT).show()
+                                }
+                            ) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = stringResource(id = R.string.copy_logs))
                             }
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = stringResource(id = R.string.copy_logs))
+                            IconButton(
+                                onClick = {
+                                    clearDebugLog()
+                                    Toast.makeText(context, R.string.logs_cleared, Toast.LENGTH_SHORT).show()
+                                }
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.clear_logs))
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
