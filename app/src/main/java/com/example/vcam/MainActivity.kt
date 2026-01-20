@@ -843,6 +843,7 @@ class MainActivity : ComponentActivity() {
             ensureVideoDirExists()
         }
 
+        ensureLocationDefaults()
         makePrefsReadable()
         videoDirState.value = getVideoDir()
         expectedResolutionState.value = formatExpectedResolution(readExpectedResolution())
@@ -856,6 +857,16 @@ class MainActivity : ComponentActivity() {
         locationDebugState.value = File(getVideoDir() + FileMode.LOCATION_DEBUG.fileName).exists()
         loadLocationConfig()
         updateMissingVideoNotification()
+    }
+
+    private fun ensureLocationDefaults() {
+        val disableFile = File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName)
+        if (!disableFile.exists()) {
+            try {
+                disableFile.createNewFile()
+            } catch (_: Exception) {
+            }
+        }
     }
 
     private fun loadLocationConfig() {
