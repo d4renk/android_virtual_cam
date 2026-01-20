@@ -29,13 +29,19 @@
 - Android 7.0 (API 24) 及以上。
 - 已安装 Xposed 框架 (推荐 LSPosed)。
 
-### 2. 安装与激活
+### 2. 构建
+- `./gradlew assembleDebug`
+- `./gradlew lintDebug`
+
+> 💡 **Gradle 下载加速**：默认使用华为云镜像拉取 Gradle Wrapper。路径在 `gradle/wrapper/gradle-wrapper.properties`，可根据网络情况替换 `distributionUrl`。
+
+### 3. 安装与激活
 1. 下载并安装本模块 APK。
 2. 在 Xposed 框架中启用模块。
    - **LSPosed 用户**：请勾选**目标应用**（需要替换相机的 App），**无需**勾选系统框架。
 3. 重启目标应用。
 
-### 3. 权限配置
+### 4. 权限配置
 1. 确保目标应用拥有**读取本地存储**权限。
 2. 如果应用未申请存储权限，模块会自动重定向到私有目录：
    - `/[内部存储]/Android/data/[应用包名]/files/Camera1/`
