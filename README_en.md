@@ -1,67 +1,112 @@
-# android_virtual_cam
+<div align="center">
+
+# 📷 Android Virtual Cam
+
+An Xposed-based virtual camera module for Android that supports replacing camera preview with video.
+
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Android](https://img.shields.io/badge/Android-7.0%2B-green.svg)](https://developer.android.com/about/versions/nougat)
+[![Version](https://img.shields.io/badge/Version-4.4-orange.svg)]()
 
 [简体中文](./README.md) | [繁體中文](./README_tc.md) | [English](./README_en.md)
 
-A virtual camera based on Xposed
+</div>
 
-## DO NOT USE FOR ANY ILLEGAL PURPOSE, YOU NEED TO TAKE ALL RESPONSIBILITY AND CONSEQUENCE!
+---
 
-## Supported platform
+## ⚠️ Disclaimer
 
-- Android 7.0+
+> **DO NOT USE FOR ANY ILLEGAL PURPOSE, YOU NEED TO TAKE ALL RESPONSIBILITY AND CONSEQUENCES!**
+> This project is for learning and research purposes only.
 
-## Usage
+---
 
-1. Install this module , enable it in Xposed . Lsposed and other framework which have a scope list, you need to choose target app instead of System Framework.
+## 🚀 Quick Start
 
-2. In system Setting, authorize target to access local storage, and force stop the app. If the app does not request this permission, see step3.
+### 1. Requirements
+- Android 7.0 (API 24) or higher.
+- Xposed framework installed (LSPosed recommended).
 
-3. Open target app, if the app does not have the permission to access local storage. There will be a toast message showing that `Camera1` directory has been redirected to app's private directory `/[INTERNAL_STORAGE]/Android/data/[package_name]/files/Camera1/`. If there isn't the message, the default `Camera1` directory is `/[INTERNAL_STORAGE]/Download/Camera1/`. If the directory doesn't exist, please create it or use the app to pick a directory.
+### 2. Installation & Activation
+1. Download and install the module APK.
+2. Enable the module in your Xposed manager.
+   - **LSPosed Users**: Select the **Target App** (the app you want to hook), **NO** need to select System Framework.
+3. Force stop and restart the target app.
 
-> Attention: `Camera1` in the private directory only works for single app.
+### 3. Permissions & Storage
+1. Ensure the target app has **Read External Storage** permission.
+2. If the app does not request storage permission, the module will redirect to the app's private directory:
+   - `/[Internal Storage]/Android/data/[Package Name]/files/Camera1/`
+3. Otherwise, the default working directory is:
+   - `/[Internal Storage]/Download/Camera1/` (Recommended)
+   - or `/[Internal Storage]/DCIM/Camera1/` (Legacy support)
 
-4. Open the camera in target app. There will be a toast message showing the resolution (width/height). Match the replacing video's resolution. Name it `virtual.mp4`, put it under `Camera1` directory. You can also pick a photo in the app and generate `virtual.mp4` automatically.
+> 💡 **Tip**: You can use the "Select Directory" feature within the VCam app to automatically create the necessary folders.
 
-5. If there is a toast message when you take photos in app ("发现拍照")，it shows the photo's resolution. You need to prepare a photo which has the same resolution. Name it as `1000.bmp` . Put it under `Camera1` directory. (it support other image format renamed to bmp ). If there isn't a toast message , `1000.bmp` will have nothing to do with replacing capture.
+## 🛠️ Usage Guide
 
-6. If you need to play video sound, create `no-silent.jpg` under the current `Camera1` directory. (Global real-time effective)
+### Prepare Video Source
+1. **Get Resolution**: Open the camera preview in the target app. Look for a toast message showing the resolution (e.g., "Width: 1280 Height: 720").
+2. **Prepare Video**:
+   - Create or resize a video file to match the resolution shown.
+   - Name it `virtual.mp4`.
+   - Place it in the working directory (`Camera1` folder).
+   - *Optional: Use the "Select Photo -> Generate Video" feature in the VCam app.*
 
-7. If you need to turn off the module temporarily, create `disable.jpg` under the current `Camera1` directory. (Global real-time effective)
+### Photo Replacement (Optional)
+If you see a "Picture Taken" toast message when snapping a photo:
+1. Prepare an image with the resolution shown in the toast.
+2. Name it `1000.bmp` (jpg/png renamed to bmp is also supported).
+3. Place it in the working directory.
 
-8. If you find toast messages annoying, you can create a `no_toast.jpg` file in the current `Camera1` directory. (Global real-time effective)
+## ⚙️ Advanced Configuration
 
-9. The directory redirection message is displayed only once by default. If you miss the toast message, create a `force_show.jpg` file in the current `Camera1` directory to show it again. (Global real-time effective)
+Create the following **files** (empty files are fine) in the `Camera1` directory to toggle features in real-time:
 
-10. If you need to allocate videos for each application, you can create `private_dir.jpg` in the current `Camera1` directory to enforce apps use private directory. (Global real-time effective)
+| Filename | Description |
+| :--- | :--- |
+| `no-silent.jpg` | 🔊 **Play Sound**: Play the original video sound during preview. |
+| `disable.jpg` | ⏸️ **Disable Hook**: Temporarily disable the module and restore the real camera. |
+| `no_toast.jpg` | 🔕 **Silent Mode**: Hide all toast messages from the module. |
+| `force_show.jpg` | ℹ️ **Show Path**: Force show the directory redirection toast again. |
+| `private_dir.jpg` | 🔒 **Force Private**: Force each app to use its own private directory. |
 
-> Note: the configuration of 6 ~ 10 are in the application. You can quickly configure them in the application or create files manually. The app also provides a material checker and a persistent notification if `virtual.mp4` is missing.
+## ❓ FAQ
 
-## FAQ
+<details>
+<summary><strong>Q: Front camera orientation is wrong?</strong></summary>
+Usually, you need to **horizontally flip** the video and **rotate it 90° right**. The final resolution must match the toast message. Some apps may not require rotation, so please adjust based on actual results.
+</details>
 
-Q1. The problems of front camera?  
-A1. In most cases , the video for replacing front camera need to be flipped horizontally and rotated right 90 degrees. The video's resolution **after being processed** need to same with that in toast message.  But in some came, it doesn't need to make adjustment, so you need to judge it according to situation.
+<details>
+<summary><strong>Q: Black screen or camera fails to open?</strong></summary>
+1. Check directory structure: It should be `Camera1/virtual.mp4`, NOT `Camera1/Camera1/virtual.mp4`.
+2. The target app might not be compatible (e.g., some system cameras).
+3. Check file permissions and paths.
+</details>
 
-Q2. Black screen ? Open camera fail ?  
-A2. Till now ,there are a few apps that can't be hooked, especially the system camera. Or it caused by wrong `Camera1` directory（Whether two levels of Camera1 directory were created, like `./DCIM/Camera1/Camera1/virtual.mp4`, only one level is needed）.
+<details>
+<summary><strong>Q: Distorted or garbled screen?</strong></summary>
+The video resolution does not match the camera preview resolution. Please strictly follow the resolution shown in the toast message.
+</details>
 
-Q3. Blurred screen?  
-A3. The resolution of video is wrong.
+<details>
+<summary><strong>Q: `disable.jpg` not working?</strong></summary>
+Try creating the file in both the private directory AND the public directory (`Download/Camera1` or `DCIM/Camera1`).
+</details>
 
-Q4. Distorted picture?  
-A4. Please use the video editing software to modify the original video to match the screen.
+## 🐞 Feedback & Issues
 
-Q5. `disable.jpg` invalid?  
-A5. If the application version `<=4.0`, then the control files in the `[INTERNEL_STORAGE]/DCIM/Camera1` directory will take effect for the applications that **have access to storage permissions**, and for the rest of the applications without permission, control files should be created in the **private directory**  
-If the app version `>=4.1`, it should be created in `[INTERNEL_STORAGE]/DCIM/Camera1` regardless of whether the target app has permissions.
+Please report issues on [GitHub Issues](https://github.com/w2016561536/android_virtual_cam/issues).
+> **Note**: When reporting a bug, please attach the **Xposed Module Log** for troubleshooting.
 
-## Question report:
+## 🔗 Credits
 
-raise it in issues directly. If it is a bug, please attach with Xposed **modules** log.
+- Hook Method: [CameraHook](https://github.com/wangwei1237/CameraHook)
+- H264 Hardware Decode: [Android-VideoToImages](https://github.com/zhantong/Android-VideoToImages)
+- JPEG to YUV: [CSDN Blog](https://blog.csdn.net/jacke121/article/details/73888732)
 
-## Credit
-
-Provide hook method: https://github.com/wangwei1237/CameraHook
-
-H.264 hardware decode： https://github.com/zhantong/Android-VideoToImages
-
-JPEG-YUV convert： https://blog.csdn.net/jacke121/article/details/73888732  
+---
+<div align="center">
+Made with ❤️ for Android
+</div>
