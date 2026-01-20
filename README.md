@@ -1,48 +1,122 @@
-# Android Virtual Cam
+<div align="center">
+
+# 📷 Android Virtual Cam
+
+基于 Xposed 的安卓虚拟摄像头模块，支持视频替换相机预览。
+
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Android](https://img.shields.io/badge/Android-7.0%2B-green.svg)](https://developer.android.com/about/versions/nougat)
+[![Version](https://img.shields.io/badge/Version-4.4-orange.svg)]()
 
 [简体中文](./README.md) | [繁體中文](./README_tc.md) | [English](./README_en.md)
 
-基于 Xposed 的安卓虚拟摄像头模块。
+> **源码镜像**：[Gitee (中国大陆加速)](https://gitee.com/w2016561536/android_virtual_cam)
 
-> ⚠️ 请勿用于任何非法用途，所有后果自负。
+</div>
 
-## 快速了解
-- **平台要求**：安卓 7.0 及以上。
-- **源码镜像**：中国大陆加速地址（Gitee）：https://gitee.com/w2016561536/android_virtual_cam
+---
 
-## 安装与启用
-1. 安装模块并在 Xposed 中启用。若使用 LSPosed 等带作用域的框架，只需勾选目标应用，无需勾选系统框架。
-2. 在系统设置中授予目标应用“读取本地存储”权限，然后强制停止该应用。若应用不申请该权限，继续看下一步。
-3. 打开目标应用：
-   - 如果缺少存储权限，会出现气泡提示：`Camera1` 已重定向到私有目录 `/[内部存储]/Android/data/[应用包名]/files/Camera1/`。
-   - 如果无提示，则默认目录为 `/[内部存储]/Download/Camera1/`。目录不存在请手动创建，或用应用内“选择目录”自动创建。
-   - **提示**：私有目录下的 `Camera1` 仅对当前应用生效。
+## ⚠️ 免责声明
 
-## 准备替换素材
-1. 在目标应用打开相机预览时，气泡消息会显示分辨率（示例：“宽：... 高：...”）。根据该分辨率制作替换视频，命名为 `virtual.mp4`，放到 `Camera1` 目录。若无提示，可直接使用原视频分辨率。也可在应用内“选择照片→生成视频”，自动导出 `virtual.mp4`。
-2. 如果拍照仍显示真实照片且收到 `发现拍照` 提示及分辨率，请按提示分辨率准备一张图片，命名为 `1000.bmp`，放入 `Camera1` 目录（其他格式更名为 .bmp 亦可）。若无提示，则无需该文件。
-3. 可选开关（全局实时生效，均放在当前 `Camera1` 目录，可在应用内快速配置）：
-   - 播放视频声音：创建 `no-silent.jpg`。
-   - 临时停用视频替换：创建 `disable.jpg`。
-   - 关闭 Toast 提示：创建 `no_toast.jpg`。
-   - 重新显示目录重定向提示：创建 `force_show.jpg`。
-   - 每个应用独立视频目录：创建 `private_dir.jpg`（强制使用应用私有目录）。
-4. 应用内提供“检测素材”，会校验 `virtual.mp4` 是否存在、是否可解码、分辨率是否匹配，并给出提示。
-5. 若缺少 `virtual.mp4`，系统会显示常驻通知提醒当前目录。
+> **请勿用于任何非法用途，所有后果由使用者自行承担。**
+> 本项目仅供学习和研究使用。
 
-## 常见问题
-- **前置摄像头方向异常**：通常需要将前置视频水平翻转并右旋 90°，并确保处理后的分辨率与气泡提示一致；也可能不需要翻转，请以实际效果为准。
-- **黑屏或相机启动失败**：部分应用（尤其是系统相机）可能不支持替换；或路径层级错误（只需单级 `DCIM/Camera1`，不要嵌套多级）。
-- **花屏**：视频分辨率不匹配，请按提示分辨率重新导出。
-- **画面扭曲/变形**：使用剪辑软件调整视频比例以匹配屏幕。
-- **`disable.jpg` 无效**：
-  - 应用版本 ≤ 4.0：`/[内部存储]/DCIM/Camera1/` 仅对有存储权限的应用生效，其余应用需在私有目录创建。
-  - 应用版本 ≥ 4.1：统一在 `/[内部存储]/DCIM/Camera1/` 创建，与目标应用权限无关。
+---
 
-## 反馈
-如遇问题请在 Issues 中反馈；提交 BUG 请附带 Xposed **模块**日志。
+## ✨ 功能特性
 
-## 致谢
-- 提供 HOOK 思路：https://github.com/wangwei1237/CameraHook
-- H264 硬解码： https://github.com/zhantong/Android-VideoToImages
-- JPEG 转 YUV： https://blog.csdn.net/jacke121/article/details/73888732
+- **视频替换预览**：使用本地视频文件替换相机预览画面。
+- **图片替换拍照**：支持替换拍照结果（需特定配置）。
+- **实时控制**：通过文件开关实时控制静音、禁用等功能。
+- **私有目录支持**：支持应用私有目录，避免权限问题。
+- **硬件解码**：高效的视频处理。
+
+## 🚀 快速开始
+
+### 1. 环境要求
+- Android 7.0 (API 24) 及以上。
+- 已安装 Xposed 框架 (推荐 LSPosed)。
+
+### 2. 安装与激活
+1. 下载并安装本模块 APK。
+2. 在 Xposed 框架中启用模块。
+   - **LSPosed 用户**：请勾选**目标应用**（需要替换相机的 App），**无需**勾选系统框架。
+3. 重启目标应用。
+
+### 3. 权限配置
+1. 确保目标应用拥有**读取本地存储**权限。
+2. 如果应用未申请存储权限，模块会自动重定向到私有目录：
+   - `/[内部存储]/Android/data/[应用包名]/files/Camera1/`
+3. 否则，默认工作目录为：
+   - `/[内部存储]/Download/Camera1/` (推荐)
+   - 或 `/[内部存储]/DCIM/Camera1/` (旧版兼容)
+
+> 💡 **提示**：应用内提供了“选择目录”功能，可自动创建所需的文件夹。
+
+## 🛠️ 使用指南
+
+### 准备素材
+1. **获取分辨率**：打开目标应用的相机预览，观察屏幕下方的气泡提示（如“宽：1280 高：720”）。
+2. **制作视频**：
+   - 准备一个视频文件，修改分辨率以匹配提示。
+   - 命名为 `virtual.mp4`。
+   - 放入工作目录（`Camera1` 文件夹）。
+   - *可选：在 App 内使用“选择照片→生成视频”功能自动处理。*
+
+### 拍照替换 (可选)
+如果拍照时收到“发现拍照”的气泡提示：
+1. 准备一张同分辨率的图片。
+2. 命名为 `1000.bmp` (支持 jpg/png 改名为 bmp)。
+3. 放入工作目录。
+
+## ⚙️ 高级配置
+
+在 `Camera1` 目录下创建以下**文件**（0字节即可）作为开关，实时生效：
+
+| 文件名 | 功能描述 |
+| :--- | :--- |
+| `no-silent.jpg` | 🔊 **播放声音**：替换视频时播放原声。 |
+| `disable.jpg` | ⏸️ **暂停替换**：临时停用模块功能，恢复真实相机。 |
+| `no_toast.jpg` | 🔕 **静默模式**：隐藏所有 Toast 气泡提示。 |
+| `force_show.jpg` | ℹ️ **显示路径**：强制重新显示目录重定向提示。 |
+| `private_dir.jpg` | 🔒 **强制私有**：强制每个应用使用独立的私有目录。 |
+
+## ❓ 常见问题 (FAQ)
+
+<details>
+<summary><strong>Q: 前置摄像头画面方向不对？</strong></summary>
+通常需要将视频**水平翻转**并**右旋 90°**。处理后的分辨率需与气泡提示一致。部分应用可能无需旋转，请根据实际效果调整。
+</details>
+
+<details>
+<summary><strong>Q: 黑屏或相机启动失败？</strong></summary>
+1. 检查目录结构：确保是 `Camera1/virtual.mp4`，而不是 `Camera1/Camera1/virtual.mp4`。
+2. 目标应用可能不兼容（如部分系统相机）。
+3. 检查文件权限和路径是否正确。
+</details>
+
+<details>
+<summary><strong>Q: 画面花屏或扭曲？</strong></summary>
+视频分辨率与相机预览分辨率不匹配。请严格按照气泡提示的分辨率调整视频。
+</details>
+
+<details>
+<summary><strong>Q: `disable.jpg` 无效？</strong></summary>
+请尝试在私有目录和公共目录（`Download/Camera1` 或 `DCIM/Camera1`）都创建该文件。
+</details>
+
+## 🐞 反馈与交流
+
+如遇问题，请在 [Issues](https://github.com/w2016561536/android_virtual_cam/issues) 中反馈。
+> **注意**：提交 Bug 时请务必附带 **Xposed 模块日志**，以便排查问题。
+
+## 🔗 致谢
+
+- Hook 思路：[CameraHook](https://github.com/wangwei1237/CameraHook)
+- H264 硬解码：[Android-VideoToImages](https://github.com/zhantong/Android-VideoToImages)
+- JPEG 转 YUV：[CSDN Blog](https://blog.csdn.net/jacke121/article/details/73888732)
+
+---
+<div align="center">
+Made with ❤️ for Android
+</div>
