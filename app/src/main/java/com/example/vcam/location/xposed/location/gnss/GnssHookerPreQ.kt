@@ -1,11 +1,12 @@
 package com.example.vcam.location.xposed.location.gnss
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.annotation.SuppressLint
 import com.github.kyuubiran.ezxhelper.utils.findAllMethods
 import com.github.kyuubiran.ezxhelper.utils.hookBefore
 import com.github.kyuubiran.ezxhelper.utils.isPrivate
 import com.github.kyuubiran.ezxhelper.utils.isPublic
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import com.example.vcam.location.xposed.helpers.ConfigGateway
 
@@ -19,10 +20,10 @@ class GnssHookerPreQ {
             name == "addGnssBatchingCallback" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in addGnssBatchingCallback (Pre Q)! Caller package name: $packageName")
+            LocationLogger.log("FL: in addGnssBatchingCallback (Pre Q)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = false
                 return@hookBefore
             }
@@ -32,10 +33,10 @@ class GnssHookerPreQ {
             name == "addGnssDataListener" && isPrivate
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in addGnssDataListener (Pre Q)! Caller package name: $packageName")
+            LocationLogger.log("FL: in addGnssDataListener (Pre Q)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = false
                 return@hookBefore
             }
@@ -46,10 +47,10 @@ class GnssHookerPreQ {
             name == "addGnssMeasurementsListener" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in addGnssMeasurementsListener (Pre Q)! Caller package name: $packageName")
+            LocationLogger.log("FL: in addGnssMeasurementsListener (Pre Q)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = false
                 return@hookBefore
             }
@@ -59,10 +60,10 @@ class GnssHookerPreQ {
             name == "addGnssNavigationMessageListener" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in addGnssNavigationMessageListener (Pre Q)! Caller package name: $packageName")
+            LocationLogger.log("FL: in addGnssNavigationMessageListener (Pre Q)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = false
                 return@hookBefore
             }

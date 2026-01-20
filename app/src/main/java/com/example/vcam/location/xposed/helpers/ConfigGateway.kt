@@ -1,11 +1,12 @@
 package com.example.vcam.location.xposed.helpers
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.os.Build
 import android.os.Environment
 import com.example.vcam.BuildConfig
 import com.example.vcam.location.model.FakeLocation
 import de.robv.android.xposed.XSharedPreferences
-import de.robv.android.xposed.XposedBridge
 import org.json.JSONArray
 import org.json.JSONObject
 import org.lsposed.hiddenapibypass.HiddenApiBypass
@@ -77,7 +78,7 @@ class ConfigGateway private constructor() {
         }
         val list = readWhitelist()
         if (list.isEmpty()) {
-            return false
+            return true
         }
         return list.any { packageName.contains(it) }
     }
@@ -91,7 +92,7 @@ class ConfigGateway private constructor() {
             val json = JSONArray(file.readText())
             List(json.length()) { index -> json.optString(index, "") }.filter { it.isNotBlank() }
         } catch (e: Exception) {
-            XposedBridge.log("VCAM: [location] Failed to parse whitelist: $e")
+            LocationLogger.log("VCAM: [location] Failed to parse whitelist: $e")
             emptyList()
         }
     }
@@ -116,7 +117,7 @@ class ConfigGateway private constructor() {
                 obj.optInt("bandwidth", 0)
             )
         } catch (e: Exception) {
-            XposedBridge.log("VCAM: [location] Failed to parse config: $e")
+            LocationLogger.log("VCAM: [location] Failed to parse config: $e")
             FakeLocation(0.0, 0.0, 0.0, 0, 0, 0, 0, 0)
         }
     }

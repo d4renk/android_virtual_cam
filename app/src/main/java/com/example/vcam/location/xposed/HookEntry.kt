@@ -1,10 +1,11 @@
 package com.example.vcam.location.xposed
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.annotation.SuppressLint
 import android.os.Build
 import com.github.kyuubiran.ezxhelper.init.EzXHelperInit
 import de.robv.android.xposed.IXposedHookLoadPackage
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import com.example.vcam.location.xposed.cellar.PhoneInterfaceManagerHooker
 import com.example.vcam.location.xposed.cellar.TelephonyRegistryHooker
@@ -33,7 +34,7 @@ class HookEntry : IXposedHookLoadPackage {
                     EzXHelperInit.setLogTag("VCAM Location")
                     EzXHelperInit.setToastTag("VCAM")
 
-                    XposedBridge.log("VCAM: [location] init hooks")
+                    LocationLogger.log("VCAM: [location] init hooks")
 
                     try {
                         TelephonyRegistryHooker().hookListen(lpparam)
@@ -70,7 +71,7 @@ class HookEntry : IXposedHookLoadPackage {
 
                         WLANHooker().hookWifiManager(lpparam)
                     } catch (e: Exception) {
-                        XposedBridge.log("VCAM: [location] hook failed: $e")
+                        LocationLogger.log("VCAM: [location] hook failed: $e")
                     }
                 }
 
@@ -78,7 +79,7 @@ class HookEntry : IXposedHookLoadPackage {
                     try {
                         PhoneInterfaceManagerHooker().hookCellLocation(lpparam)
                     } catch (e: Exception) {
-                        XposedBridge.log("VCAM: [location] phone hooks failed: $e")
+                        LocationLogger.log("VCAM: [location] phone hooks failed: $e")
                     }
                 }
             }

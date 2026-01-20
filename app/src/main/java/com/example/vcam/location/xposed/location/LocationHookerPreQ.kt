@@ -1,11 +1,12 @@
 package com.example.vcam.location.xposed.location
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.annotation.SuppressLint
 import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
 import com.github.kyuubiran.ezxhelper.utils.*
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import com.example.vcam.location.xposed.helpers.ConfigGateway
 import org.lsposed.hiddenapibypass.HiddenApiBypass
@@ -22,10 +23,10 @@ class LocationHookerPreQ {
         }.hookMethod {
             after {
                 val packageName = ConfigGateway.get().callerIdentityToPackageName(it.args[1])
-                XposedBridge.log("FL: in getLastLocation (Pre Q)! Caller package name: $packageName")
+                LocationLogger.log("FL: in getLastLocation (Pre Q)! Caller package name: $packageName")
 
                 if (ConfigGateway.get().inWhitelist(packageName)) {
-                    XposedBridge.log("FL: in whitelist! Return custom location")
+                    LocationLogger.log("FL: in whitelist! Return custom location")
                     val fakeLocation = ConfigGateway.get().readFakeLocation()
 
                     lateinit var location: Location
@@ -55,10 +56,10 @@ class LocationHookerPreQ {
                     try {
                         HiddenApiBypass.invoke(location.javaClass, location, "setIsFromMockProvider", false)
                     } catch (e: Exception) {
-                        XposedBridge.log("FL: Not possible to mock (Pre Q)! $e")
+                        LocationLogger.log("FL: Not possible to mock (Pre Q)! $e")
                     }
 
-                    XposedBridge.log("FL: x: ${location.latitude}, y: ${location.longitude}")
+                    LocationLogger.log("FL: x: ${location.latitude}, y: ${location.longitude}")
                     it.result = location
                 }
             }
@@ -68,7 +69,7 @@ class LocationHookerPreQ {
             name == "handleLocationChangedLocked" && isNotPublic
         }.hookMethod {
             before { param ->
-                XposedBridge.log("FL: in handleLocationChangedLocked (Pre Q)! Removing whitelisted apps...")
+                LocationLogger.log("FL: in handleLocationChangedLocked (Pre Q)! Removing whitelisted apps...")
                 val mRecordsByProviderField = findField(clazz) {
                     name == "mRecordsByProvider"
                 }
@@ -118,7 +119,7 @@ class LocationHookerPreQ {
                             try {
                                 HiddenApiBypass.invoke(location.javaClass, location, "setIsFromMockProvider", false)
                             } catch (e: Exception) {
-                                XposedBridge.log("FL: Not possible to mock (Pre Q)! $e")
+                                LocationLogger.log("FL: Not possible to mock (Pre Q)! $e")
                             }
 
                             // TODO: this is a unsafe call that bypass the validation of system
@@ -132,7 +133,7 @@ class LocationHookerPreQ {
                 }
 
                 mRecordsByProviderField.set(param.thisObject, newRecords)
-                XposedBridge.log("FL: Finished delivering altered records...")
+                LocationLogger.log("FL: Finished delivering altered records...")
             }
         }
     }

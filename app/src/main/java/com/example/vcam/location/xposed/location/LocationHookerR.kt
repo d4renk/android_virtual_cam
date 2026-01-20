@@ -1,9 +1,10 @@
 package com.example.vcam.location.xposed.location
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.annotation.SuppressLint
 import android.location.*
 import com.github.kyuubiran.ezxhelper.utils.*
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import com.example.vcam.location.xposed.helpers.ConfigGateway
 
@@ -22,10 +23,10 @@ class LocationHookerR {
         }.hookMethod {
             after {
                 val packageName = ConfigGateway.get().callerIdentityToPackageName(it.args[1])
-                XposedBridge.log("FL: in getLastLocation! Caller package name: $packageName")
+                LocationLogger.log("FL: in getLastLocation! Caller package name: $packageName")
 
                 if (ConfigGateway.get().inWhitelist(packageName)) {
-                    XposedBridge.log("FL: in whitelist! Return custom location")
+                    LocationLogger.log("FL: in whitelist! Return custom location")
                     val fakeLocation = ConfigGateway.get().readFakeLocation()
 
                     lateinit var location: Location
@@ -60,10 +61,10 @@ class LocationHookerR {
                             false
                         )
                     } catch (e: Exception) {
-                        XposedBridge.log("FL: Not possible to mock (R)! $e")
+                        LocationLogger.log("FL: Not possible to mock (R)! $e")
                     }
 
-                    XposedBridge.log("FL: x: ${location.latitude}, y: ${location.longitude}")
+                    LocationLogger.log("FL: x: ${location.latitude}, y: ${location.longitude}")
                     it.result = location
                 }
             }
@@ -74,7 +75,7 @@ class LocationHookerR {
         }.hookMethod {
             after { param ->
                 val packageName = ConfigGateway.get().callerIdentityToPackageName(param.args[2])
-                XposedBridge.log("FL: in getCurrentLocation! Caller package name: $packageName")
+                LocationLogger.log("FL: in getCurrentLocation! Caller package name: $packageName")
 
                 param.result = null
             }
@@ -92,7 +93,7 @@ class LocationHookerR {
             name == "handleLocationChangedLocked" && isNotPublic
         }.hookMethod {
             before { param ->
-                XposedBridge.log("FL: in handleLocationChangedLocked (R)! Removing whitelisted apps...")
+                LocationLogger.log("FL: in handleLocationChangedLocked (R)! Removing whitelisted apps...")
                 val mRecordsByProviderField = findField(clazz) {
                     name == "mRecordsByProvider"
                 }
@@ -150,7 +151,7 @@ class LocationHookerR {
                                     false
                                 )
                             } catch (e: Exception) {
-                                XposedBridge.log("FL: Not possible to mock (R)! $e")
+                                LocationLogger.log("FL: Not possible to mock (R)! $e")
                             }
 
                             // TODO: this is a unsafe call that bypass the validation of system
@@ -164,7 +165,7 @@ class LocationHookerR {
                 }
 
                 mRecordsByProviderField.set(param.thisObject, newRecords)
-                XposedBridge.log("FL: Finished delivering altered records...")
+                LocationLogger.log("FL: Finished delivering altered records...")
             }
         }
 
@@ -172,10 +173,10 @@ class LocationHookerR {
             name == "requestGeofence" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[3] as String
-            XposedBridge.log("FL: in requestGeofence (R)! Caller package name: $packageName")
+            LocationLogger.log("FL: in requestGeofence (R)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = null
                 return@hookBefore
             }

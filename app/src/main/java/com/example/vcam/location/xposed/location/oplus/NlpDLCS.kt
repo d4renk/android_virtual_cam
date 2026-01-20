@@ -1,5 +1,7 @@
 package com.example.vcam.location.xposed.location.oplus
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.annotation.SuppressLint
 import android.location.Location
 import android.location.LocationManager
@@ -8,7 +10,6 @@ import android.util.ArrayMap
 import androidx.annotation.RequiresApi
 import com.github.kyuubiran.ezxhelper.utils.*
 import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import com.example.vcam.location.xposed.helpers.ConfigGateway
 
@@ -24,9 +25,9 @@ class NlpDLCS {
         }.hookAfter { param ->
             val providerName = param.args[0] as String
 
-            XposedBridge.log("FL: [Color] in newLocProviderManager!")
+            LocationLogger.log("FL: [Color] in newLocProviderManager!")
             if (providerName == "network") {    // Hook Nlp provider manager each time
-                XposedBridge.log("FL: [Color] respawn nlp manager, trying to hook...")
+                LocationLogger.log("FL: [Color] respawn nlp manager, trying to hook...")
 
                 val locationProviderManager = param.result
                 if (locationProviderManager != null) {
@@ -45,7 +46,7 @@ class NlpDLCS {
     @RequiresApi(Build.VERSION_CODES.S)
     @OptIn(ExperimentalStdlibApi::class)
     private fun hookOnReportLocation(clazz: Class<*>, param: XC_MethodHook.MethodHookParam) {
-        XposedBridge.log("FL: [Color] in onReportLocation!")
+        LocationLogger.log("FL: [Color] in onReportLocation!")
 
         val mRegistrations = findField(clazz, true) {
             name == "mRegistrations"

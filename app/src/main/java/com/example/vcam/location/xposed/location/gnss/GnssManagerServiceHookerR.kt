@@ -1,10 +1,11 @@
 package com.example.vcam.location.xposed.location.gnss
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.annotation.SuppressLint
 import com.github.kyuubiran.ezxhelper.utils.findAllMethods
 import com.github.kyuubiran.ezxhelper.utils.hookBefore
 import com.github.kyuubiran.ezxhelper.utils.isPublic
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import com.example.vcam.location.xposed.helpers.ConfigGateway
 
@@ -18,10 +19,10 @@ class GnssManagerServiceHookerR {
             name == "addGnssBatchingCallback" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in addGnssBatchingCallback (R)! Caller package name: $packageName")
+            LocationLogger.log("FL: in addGnssBatchingCallback (R)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = false
                 return@hookBefore
             }
@@ -31,10 +32,10 @@ class GnssManagerServiceHookerR {
             name == "registerGnssStatusCallback" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in registerGnssStatusCallback (R)! Caller package name: $packageName")
+            LocationLogger.log("FL: in registerGnssStatusCallback (R)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = false
                 return@hookBefore
             }
@@ -44,10 +45,10 @@ class GnssManagerServiceHookerR {
             name == "addGnssMeasurementsListener" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[2] as String
-            XposedBridge.log("FL: in addGnssMeasurementsListener (R)! Caller package name: $packageName")
+            LocationLogger.log("FL: in addGnssMeasurementsListener (R)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = false
                 return@hookBefore
             }
@@ -57,10 +58,10 @@ class GnssManagerServiceHookerR {
             name == "addGnssNavigationMessageListener" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in addGnssNavigationMessageListener (R)! Caller package name: $packageName")
+            LocationLogger.log("FL: in addGnssNavigationMessageListener (R)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = false
                 return@hookBefore
             }
@@ -70,10 +71,10 @@ class GnssManagerServiceHookerR {
             name == "addGnssAntennaInfoListener" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in addGnssAntennaInfoListener (R)! Caller package name: $packageName")
+            LocationLogger.log("FL: in addGnssAntennaInfoListener (R)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = false
                 return@hookBefore
             }

@@ -1,5 +1,7 @@
 package com.example.vcam.location.xposed.location
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.annotation.SuppressLint
 import android.location.*
 import android.os.Build
@@ -7,7 +9,6 @@ import android.util.ArrayMap
 import androidx.annotation.RequiresApi
 import com.github.kyuubiran.ezxhelper.utils.*
 import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import com.example.vcam.location.xposed.helpers.ConfigGateway
 import java.lang.Exception
@@ -44,10 +45,10 @@ class LocationHookerAfterS {
                     else it.args[1]
 
                     val packageName = ConfigGateway.get().callerIdentityToPackageName(targetParam)
-                    XposedBridge.log("FL: in getLastLocation! Caller package name: $packageName")
+                    LocationLogger.log("FL: in getLastLocation! Caller package name: $packageName")
 
                     if (ConfigGateway.get().inWhitelist(packageName)) {
-                        XposedBridge.log("FL: in whitelist! Return custom location")
+                        LocationLogger.log("FL: in whitelist! Return custom location")
                         val fakeLocation = ConfigGateway.get().readFakeLocation()
 
                         lateinit var location: Location
@@ -76,11 +77,11 @@ class LocationHookerAfterS {
                         location.speed = 0F
                         location.speedAccuracyMetersPerSecond = 0F
 
-                        XposedBridge.log("FL: x: ${location.latitude}, y: ${location.longitude}")
+                        LocationLogger.log("FL: x: ${location.latitude}, y: ${location.longitude}")
                         it.result = location
                     }
                 } catch (e: Exception) {
-                    XposedBridge.log("FL: Fuck with exceptions! $e")
+                    LocationLogger.log("FL: Fuck with exceptions! $e")
                     e.printStackTrace()
                 }
             }
@@ -96,10 +97,10 @@ class LocationHookerAfterS {
 
                 val packageName = ConfigGateway.get().callerIdentityToPackageName(targetParam)
 
-                XposedBridge.log("FL: in getCurrentLocation! Caller package name: $packageName")
+                LocationLogger.log("FL: in getCurrentLocation! Caller package name: $packageName")
 
                 if (ConfigGateway.get().inWhitelist(packageName)) {
-                    XposedBridge.log("FL: in whiteList! Inject null...")
+                    LocationLogger.log("FL: in whiteList! Inject null...")
                     param.result = null
                 }
             }
@@ -109,10 +110,10 @@ class LocationHookerAfterS {
             name == "registerGnssStatusCallback" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in registerGnssStatusCallback (S, DLC)! Caller package name: $packageName")
+            LocationLogger.log("FL: in registerGnssStatusCallback (S, DLC)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = null
                 return@hookBefore
             }
@@ -122,10 +123,10 @@ class LocationHookerAfterS {
             name == "registerGnssNmeaCallback" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[1] as String
-            XposedBridge.log("FL: in registerGnssNmeaCallback (S, DLC)! Caller package name: $packageName")
+            LocationLogger.log("FL: in registerGnssNmeaCallback (S, DLC)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = null
                 return@hookBefore
             }
@@ -135,10 +136,10 @@ class LocationHookerAfterS {
             name == "requestGeofence" && isPublic
         }.hookBefore { param ->
             val packageName = param.args[2] as String
-            XposedBridge.log("FL: in requestGeofence (S, DLC)! Caller package name: $packageName")
+            LocationLogger.log("FL: in requestGeofence (S, DLC)! Caller package name: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: in whiteList! Dropping register request...")
+                LocationLogger.log("FL: in whiteList! Dropping register request...")
                 param.result = null
                 return@hookBefore
             }
@@ -148,7 +149,7 @@ class LocationHookerAfterS {
     @RequiresApi(Build.VERSION_CODES.S)
     @OptIn(ExperimentalStdlibApi::class)
     private fun hookOnReportLocation(clazz: Class<*>, param: XC_MethodHook.MethodHookParam) {
-        XposedBridge.log("FL: in onReportLocation!")
+        LocationLogger.log("FL: in onReportLocation!")
 
         val mRegistrations = findField(clazz, true) {
             name == "mRegistrations"

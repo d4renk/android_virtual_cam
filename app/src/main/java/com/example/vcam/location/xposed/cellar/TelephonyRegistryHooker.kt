@@ -1,11 +1,12 @@
 package com.example.vcam.location.xposed.cellar
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.annotation.SuppressLint
 import android.os.Build
 import android.telephony.*
 import com.github.kyuubiran.ezxhelper.utils.*
 import com.github.kyuubiran.ezxhelper.utils.findAllMethods
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import com.example.vcam.location.xposed.cellar.identity.Lte
 import com.example.vcam.location.xposed.cellar.identity.Nr
@@ -18,7 +19,7 @@ class TelephonyRegistryHooker {
         val clazz: Class<*> =
             lpparam.classLoader.loadClass("com.android.server.TelephonyRegistry")
 
-        XposedBridge.log("FL: [Cellar] Finding method in TelephonyRegistry")
+        LocationLogger.log("FL: [Cellar] Finding method in TelephonyRegistry")
 
         findAllMethods(clazz) {
             name == "validateEventAndUserLocked" && isPrivate
@@ -30,7 +31,7 @@ class TelephonyRegistryHooker {
                 name == "callingPackage"
             }.get(record) as String
 
-            XposedBridge.log("FL: [Cellar] in validateEventAndUserLocked! Caller package name: $packageName")
+            LocationLogger.log("FL: [Cellar] in validateEventAndUserLocked! Caller package name: $packageName")
 
             val shouldReportOrigin = param.result as Boolean
 
@@ -45,7 +46,7 @@ class TelephonyRegistryHooker {
 
                 when (event) {
                     5 -> {
-                        XposedBridge.log("FL: [Cellar] in whiteList! Alter EVENT_CELL_LOCATION_CHANGED for now.")
+                        LocationLogger.log("FL: [Cellar] in whiteList! Alter EVENT_CELL_LOCATION_CHANGED for now.")
 
                         if (phoneId != null) {
                             val mCellIdentity = findField(param.thisObject.javaClass) {
@@ -109,7 +110,7 @@ class TelephonyRegistryHooker {
                     }
 
                     11 -> {
-                        XposedBridge.log("FL: [Cellar] in whiteList! Alter EVENT_CELL_INFO_CHANGED for now.")
+                        LocationLogger.log("FL: [Cellar] in whiteList! Alter EVENT_CELL_INFO_CHANGED for now.")
 
                         if (phoneId != null) {
                             val mCellInfo = findField(param.thisObject.javaClass) {
@@ -178,7 +179,7 @@ class TelephonyRegistryHooker {
         findAllMethods(clazz) {
             name == "notifyCellInfoForSubscriber" && isPublic
         }.hookBefore { param ->
-            XposedBridge.log("FL: [Cellar] in notifyCellInfoForSubscriber!")
+            LocationLogger.log("FL: [Cellar] in notifyCellInfoForSubscriber!")
 
             val mRecordsField = findField(clazz) {
                 name == "mRecords"

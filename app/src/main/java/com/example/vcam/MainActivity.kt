@@ -758,6 +758,31 @@ class MainActivity : ComponentActivity() {
         return normalizeDir(dir)
     }
 
+    private fun getPrivateDir(): String {
+        val base = Environment.getExternalStorageDirectory().absolutePath
+        return normalizeDir("$base/Android/data/${BuildConfig.APPLICATION_ID}/files/Camera1")
+    }
+
+    private fun getActiveDir(): String {
+        val publicDir = getVideoDir()
+        return if (File(publicDir + FileMode.FORCE_PRIVATE_DIR.fileName).exists()) {
+            getPrivateDir()
+        } else {
+            publicDir
+        }
+    }
+
+    private fun getLocationDir(): String {
+        return getActiveDir()
+    }
+
+    private fun ensureLocationDirExists() {
+        val dir = File(getLocationDir())
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+    }
+
     private fun setVideoDir(dir: String, treeUri: Uri?) {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val editor = prefs.edit().putString(KEY_VIDEO_DIR, normalizeDir(dir))
@@ -778,9 +803,15 @@ class MainActivity : ComponentActivity() {
             requestPermission()
             return
         }
-        val file = File(
-            getVideoDir() + mode.fileName
-        )
+        val dir = if (mode == FileMode.LOCATION_DISABLE || mode == FileMode.LOCATION_DEBUG) {
+            getLocationDir()
+        } else {
+            getVideoDir()
+        }
+        if (mode == FileMode.LOCATION_DISABLE || mode == FileMode.LOCATION_DEBUG) {
+            ensureLocationDirExists()
+        }
+        val file = File(dir + mode.fileName)
         if (file.exists() != enabled) {
             if (enabled) {
                 try {
@@ -854,8 +885,9 @@ class MainActivity : ComponentActivity() {
         forcePrivateDirState.value = File(getVideoDir() + FileMode.FORCE_PRIVATE_DIR.fileName).exists()
         disableToastState.value = File(getVideoDir() + FileMode.DISABLE_TOAST.fileName).exists()
         debugLogState.value = File(getVideoDir() + FileMode.DEBUG_LOG.fileName).exists()
-        locationEnableState.value = !File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName).exists()
-        locationDebugState.value = File(getVideoDir() + FileMode.LOCATION_DEBUG.fileName).exists()
+        loadDebugLogFromFile()
+        locationEnableState.value = !File(getLocationDir() + FileMode.LOCATION_DISABLE.fileName).exists()
+        locationDebugState.value = File(getLocationDir() + FileMode.LOCATION_DEBUG.fileName).exists()
         loadLocationConfig()
         updateMissingVideoNotification()
     }
@@ -865,7 +897,7 @@ class MainActivity : ComponentActivity() {
             requestPermission()
             return
         }
-        val file = File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName)
+        val file = File(getLocationDir() + FileMode.LOCATION_DISABLE.fileName)
         if (enabled) {
             if (file.exists()) {
                 file.delete()
@@ -886,10 +918,18 @@ class MainActivity : ComponentActivity() {
         if (prefs.getBoolean(KEY_LOCATION_DEFAULT_APPLIED, false)) {
             return
         }
-        val disableFile = File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName)
+        ensureLocationDirExists()
+        val disableFile = File(getLocationDir() + FileMode.LOCATION_DISABLE.fileName)
         if (!disableFile.exists()) {
             try {
                 disableFile.createNewFile()
+            } catch (_: Exception) {
+            }
+        }
+        val debugFile = File(getLocationDir() + FileMode.LOCATION_DEBUG.fileName)
+        if (!debugFile.exists()) {
+            try {
+                debugFile.createNewFile()
             } catch (_: Exception) {
             }
         }
@@ -897,7 +937,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadLocationConfig() {
-        val file = File(getVideoDir() + "location_config.json")
+        val file = File(getLocationDir() + "location_config.json")
         if (!file.exists()) {
             locationLatState.value = ""
             locationLonState.value = ""
@@ -923,7 +963,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         try {
-            ensureVideoDirExists()
+            ensureLocationDirExists()
             val obj = org.json.JSONObject()
             obj.put("x", lat)
             obj.put("y", lon)
@@ -933,7 +973,7 @@ class MainActivity : ComponentActivity() {
             obj.put("tac", 0)
             obj.put("earfcn", 0)
             obj.put("bandwidth", 0)
-            File(getVideoDir() + "location_config.json").writeText(obj.toString())
+            File(getLocationDir() + "location_config.json").writeText(obj.toString())
             locationConfigStatusState.value = getString(R.string.location_config_saved)
         } catch (e: Exception) {
             locationConfigStatusState.value = getString(R.string.location_config_error)
@@ -1231,7 +1271,7 @@ class MainActivity : ComponentActivity() {
     private fun clearDebugLog() {
         debugLogBuffer.clear()
         debugLogTextState.value = ""
-        val file = File(getVideoDir() + DEBUG_LOG_FILE)
+        val file = File(getActiveDir() + DEBUG_LOG_FILE)
         if (file.exists()) {
             file.delete()
         }
@@ -1239,9 +1279,28 @@ class MainActivity : ComponentActivity() {
 
     private fun appendDebugLogToFile(line: String) {
         try {
-            ensureVideoDirExists()
-            val file = File(getVideoDir() + DEBUG_LOG_FILE)
+            val dir = File(getActiveDir())
+            if (!dir.exists()) {
+                dir.mkdirs()
+            }
+            val file = File(dir, DEBUG_LOG_FILE)
             file.appendText(line + "\n")
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun loadDebugLogFromFile() {
+        val file = File(getActiveDir() + DEBUG_LOG_FILE)
+        if (!file.exists()) {
+            return
+        }
+        try {
+            val lines = file.readLines()
+            debugLogBuffer.clear()
+            for (line in lines.takeLast(MAX_DEBUG_LOG_LINES)) {
+                debugLogBuffer.addLast(line)
+            }
+            debugLogTextState.value = debugLogBuffer.joinToString("\n")
         } catch (_: Exception) {
         }
     }

@@ -1,5 +1,7 @@
 package com.example.vcam.location.xposed.location.miui
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.annotation.SuppressLint
 import android.location.Location
 import android.location.LocationManager
@@ -12,7 +14,6 @@ import com.github.kyuubiran.ezxhelper.utils.findAllMethods
 import com.github.kyuubiran.ezxhelper.utils.hookAfter
 import com.github.kyuubiran.ezxhelper.utils.hookBefore
 import com.github.kyuubiran.ezxhelper.utils.isPublic
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import com.example.vcam.location.xposed.cellar.identity.Lte
 import com.example.vcam.location.xposed.cellar.identity.Nr
@@ -38,7 +39,7 @@ class MiuiBlurLocationManagerHookerR {
             }
 
             else -> {
-                XposedBridge.log("FL: [Shaomi R] This is an unsupported version of MIUI! You may want to report this with detailed information. ${Build.VERSION.SDK_INT}")
+                LocationLogger.log("FL: [Shaomi R] This is an unsupported version of MIUI! You may want to report this with detailed information. ${Build.VERSION.SDK_INT}")
                 return
             }
         }
@@ -47,10 +48,10 @@ class MiuiBlurLocationManagerHookerR {
             name == "getBlurryLocation" && isPublic
         }.hookAfter { param ->
             val packageName = param.args[2] as String
-            XposedBridge.log("FL: [Shaomi R] in getBlurryLocation! Caller packageName: $packageName")
+            LocationLogger.log("FL: [Shaomi R] in getBlurryLocation! Caller packageName: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: [Shaomi R] in whitelist! Return custom location")
+                LocationLogger.log("FL: [Shaomi R] in whitelist! Return custom location")
                 val fakeLocation = ConfigGateway.get().readFakeLocation()
 
                 lateinit var location: Location
@@ -85,10 +86,10 @@ class MiuiBlurLocationManagerHookerR {
                         false
                     )
                 } catch (e: Exception) {
-                    XposedBridge.log("FL: [Shaomi R] Not possible to mock! $e")
+                    LocationLogger.log("FL: [Shaomi R] Not possible to mock! $e")
                 }
 
-                XposedBridge.log("FL: [Shaomi R] x: ${location.latitude}, y: ${location.longitude}")
+                LocationLogger.log("FL: [Shaomi R] x: ${location.latitude}, y: ${location.longitude}")
                 param.result = location
             }
         }
@@ -98,26 +99,26 @@ class MiuiBlurLocationManagerHookerR {
         }.hookAfter { param ->
             try {
                 val packageName = ConfigGateway.get().callerIdentityToPackageName(param.args[0])
-                XposedBridge.log("FL: [Shaomi R] in getBlurryCellLocation! Caller packageName: $packageName")
+                LocationLogger.log("FL: [Shaomi R] in getBlurryCellLocation! Caller packageName: $packageName")
 
                 if (ConfigGateway.get().inWhitelist(packageName)) {
                     when (param.result) {
                         is CellIdentityLte -> {
-                            XposedBridge.log("FL: [Shaomi R] Using LTE Network...")
+                            LocationLogger.log("FL: [Shaomi R] Using LTE Network...")
                             param.result = Lte().alterCellIdentity(param.result as CellIdentityLte)
                         }
                         is CellIdentityNr -> {
-                            XposedBridge.log("FL: [Shaomi R] Using Nr Network...")
+                            LocationLogger.log("FL: [Shaomi R] Using Nr Network...")
                             param.result = Nr().alterCellIdentity(param.result as CellIdentityNr)
                         }
                         else -> {
-                            XposedBridge.log("FL: [Shaomi R] Unsupported network type. Return null as fallback")
+                            LocationLogger.log("FL: [Shaomi R] Unsupported network type. Return null as fallback")
                             param.result = null
                         }
                     }
                 }
             } catch (e: Exception) {
-                XposedBridge.log("FL: [Shaomi R] Manually workaround for possibly invalid class...")
+                LocationLogger.log("FL: [Shaomi R] Manually workaround for possibly invalid class...")
             }
         }
 
@@ -125,10 +126,10 @@ class MiuiBlurLocationManagerHookerR {
             name == "getBlurryCellInfos" && isPublic && parameterCount == 3
         }.hookAfter { param ->
             val packageName = param.args[2] as String
-            XposedBridge.log("FL: [Shaomi R] in getBlurryCellInfos! Caller packageName: $packageName")
+            LocationLogger.log("FL: [Shaomi R] in getBlurryCellInfos! Caller packageName: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: [Shaomi R] in whiteList! Return empty CellInfos for testing purpose.")
+                LocationLogger.log("FL: [Shaomi R] in whiteList! Return empty CellInfos for testing purpose.")
                 val customAllCellInfo = ArrayList<CellInfo>()
                 param.result = customAllCellInfo
             }
@@ -138,10 +139,10 @@ class MiuiBlurLocationManagerHookerR {
             name == "blurLastGpsLocation" && isPublic
         }.hookAfter { param ->
             val packageName = ConfigGateway.get().callerIdentityToPackageName(param.args[2])
-            XposedBridge.log("FL: [Shaomi R] in blurLastGpsLocation! Caller packageName: $packageName")
+            LocationLogger.log("FL: [Shaomi R] in blurLastGpsLocation! Caller packageName: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: [Shaomi R] in whitelist! Return custom location")
+                LocationLogger.log("FL: [Shaomi R] in whitelist! Return custom location")
                 val fakeLocation = ConfigGateway.get().readFakeLocation()
 
                 lateinit var location: Location
@@ -176,10 +177,10 @@ class MiuiBlurLocationManagerHookerR {
                         false
                     )
                 } catch (e: Exception) {
-                    XposedBridge.log("FL: Not possible to mock (R)! $e")
+                    LocationLogger.log("FL: Not possible to mock (R)! $e")
                 }
 
-                XposedBridge.log("FL: x: ${location.latitude}, y: ${location.longitude}")
+                LocationLogger.log("FL: x: ${location.latitude}, y: ${location.longitude}")
                 param.result = location
             }
         }
@@ -188,10 +189,10 @@ class MiuiBlurLocationManagerHookerR {
             name == "handleGpsLocationChangedLocked" && isPublic
         }.hookBefore { param ->
             val packageName = ConfigGateway.get().callerIdentityToPackageName(param.args[1])
-            XposedBridge.log("FL: [Shaomi R] in handleGpsLocationChangedLocked! Caller packageName: $packageName")
+            LocationLogger.log("FL: [Shaomi R] in handleGpsLocationChangedLocked! Caller packageName: $packageName")
 
             if (ConfigGateway.get().inWhitelist(packageName)) {
-                XposedBridge.log("FL: [Shaomi R] in whiteList! Dropping update request for testing purpose...")
+                LocationLogger.log("FL: [Shaomi R] in whiteList! Dropping update request for testing purpose...")
                 param.result = null
                 return@hookBefore
             }

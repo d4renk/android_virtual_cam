@@ -1,9 +1,10 @@
 package com.example.vcam.location.xposed.cellar.identity
 
+import com.example.vcam.location.xposed.helpers.LocationLogger
+
 import android.os.Build
 import android.telephony.CellIdentityLte
 import android.telephony.ClosedSubscriberGroupInfo
-import de.robv.android.xposed.XposedBridge
 import com.example.vcam.location.xposed.helpers.ConfigGateway
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
@@ -69,7 +70,7 @@ class Lte {
                 cellIdentityLte.operatorAlphaShort,
             )
         } as CellIdentityLte
-        XposedBridge.log("FL: [Cellar] Returning custom result: $customResult")
+        LocationLogger.log("FL: [Cellar] Returning custom result: $customResult")
 
         return customResult
     }
