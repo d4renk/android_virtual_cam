@@ -6,6 +6,8 @@
     <string name="switch4">强制每个应用程序使用私有目录（无论权限）</string>
     <string name="switch5">关闭提示消息</string>
     <string name="switch6">开启调试日志</string>
+    <string name="switch_location_disable">关闭定位伪装</string>
+    <string name="switch_location_debug">开启定位调试日志</string>
     <string name="debug_logs_title">调试日志</string>
     <string name="copy_logs">复制日志</string>
     <string name="clear_logs">清除日志</string>

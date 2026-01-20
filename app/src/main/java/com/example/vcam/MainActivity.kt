@@ -121,6 +121,8 @@ class MainActivity : ComponentActivity() {
     private val forcePrivateDirState = mutableStateOf(false)
     private val disableToastState = mutableStateOf(false)
     private val debugLogState = mutableStateOf(false)
+    private val locationDisableState = mutableStateOf(false)
+    private val locationDebugState = mutableStateOf(false)
     private val debugLogTextState = mutableStateOf("")
     private val videoDirState = mutableStateOf(DEFAULT_VIDEO_DIR)
     private val materialCheckState = mutableStateOf("")
@@ -377,6 +379,16 @@ class MainActivity : ComponentActivity() {
                     title = stringResource(R.string.switch6), // Debug log
                     checked = debugLogState.value,
                     onCheckedChange = { updateToggle(FileMode.DEBUG_LOG, it) }
+                )
+                SettingSwitchItem(
+                    title = stringResource(R.string.switch_location_disable), // Disable location spoofing
+                    checked = locationDisableState.value,
+                    onCheckedChange = { updateToggle(FileMode.LOCATION_DISABLE, it) }
+                )
+                SettingSwitchItem(
+                    title = stringResource(R.string.switch_location_debug), // Location debug log
+                    checked = locationDebugState.value,
+                    onCheckedChange = { updateToggle(FileMode.LOCATION_DEBUG, it) }
                 )
             }
         }
@@ -786,6 +798,8 @@ class MainActivity : ComponentActivity() {
         forcePrivateDirState.value = File(getVideoDir() + FileMode.FORCE_PRIVATE_DIR.fileName).exists()
         disableToastState.value = File(getVideoDir() + FileMode.DISABLE_TOAST.fileName).exists()
         debugLogState.value = File(getVideoDir() + FileMode.DEBUG_LOG.fileName).exists()
+        locationDisableState.value = File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName).exists()
+        locationDebugState.value = File(getVideoDir() + FileMode.LOCATION_DEBUG.fileName).exists()
         updateMissingVideoNotification()
     }
 
@@ -1101,6 +1115,8 @@ class MainActivity : ComponentActivity() {
         PLAY_SOUND("no-silent.jpg"),
         FORCE_PRIVATE_DIR("private_dir.jpg"),
         DISABLE_TOAST("no_toast.jpg"),
-        DEBUG_LOG("debug_log.jpg");
+        DEBUG_LOG("debug_log.jpg"),
+        LOCATION_DISABLE("location_disable.jpg"),
+        LOCATION_DEBUG("location_debug.jpg");
     }
 }

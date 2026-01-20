@@ -7,6 +7,8 @@
     <string name="switch4">Force every app use private directory</string>
     <string name="switch5">Disable toast message</string>
     <string name="switch6">Enable debug logging</string>
+    <string name="switch_location_disable">Disable location spoofing</string>
+    <string name="switch_location_debug">Enable location debug logging</string>
     <string name="debug_logs_title">Debug logs</string>
     <string name="copy_logs">Copy logs</string>
     <string name="clear_logs">Clear logs</string>
