@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoFile
@@ -62,6 +63,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -132,6 +134,10 @@ class MainActivity : ComponentActivity() {
     private val ffmpegStatsState = mutableStateOf("")
     private val lastFfmpegErrorState = mutableStateOf("")
     private val expectedResolutionState = mutableStateOf("")
+    private val locationLatState = mutableStateOf("")
+    private val locationLonState = mutableStateOf("")
+    private val locationOffsetState = mutableStateOf("")
+    private val locationConfigStatusState = mutableStateOf("")
     private val debugLogBuffer = ArrayDeque<String>()
     private val logTimeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
 
@@ -264,6 +270,9 @@ class MainActivity : ComponentActivity() {
                 // Section: Controls
                 SettingsCard()
 
+                // Section: Location Config
+                LocationConfigCard()
+
                 // Section: Tools (Check Material & Generate Video)
                 ToolsCard()
 
@@ -390,6 +399,51 @@ class MainActivity : ComponentActivity() {
                     checked = locationDebugState.value,
                     onCheckedChange = { updateToggle(FileMode.LOCATION_DEBUG, it) }
                 )
+            }
+        }
+    }
+
+    @Composable
+    private fun LocationConfigCard() {
+        ElevatedCard {
+            Column(modifier = Modifier.padding(16.dp)) {
+                LabelText(text = stringResource(R.string.location_config_title), icon = Icons.Default.MyLocation)
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = locationLatState.value,
+                    onValueChange = { locationLatState.value = it },
+                    label = { Text(stringResource(R.string.location_latitude)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = locationLonState.value,
+                    onValueChange = { locationLonState.value = it },
+                    label = { Text(stringResource(R.string.location_longitude)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = locationOffsetState.value,
+                    onValueChange = { locationOffsetState.value = it },
+                    label = { Text(stringResource(R.string.location_offset)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(onClick = { saveLocationConfig() }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.location_save))
+                }
+                if (locationConfigStatusState.value.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = locationConfigStatusState.value,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -800,7 +854,52 @@ class MainActivity : ComponentActivity() {
         debugLogState.value = File(getVideoDir() + FileMode.DEBUG_LOG.fileName).exists()
         locationDisableState.value = File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName).exists()
         locationDebugState.value = File(getVideoDir() + FileMode.LOCATION_DEBUG.fileName).exists()
+        loadLocationConfig()
         updateMissingVideoNotification()
+    }
+
+    private fun loadLocationConfig() {
+        val file = File(getVideoDir() + "location_config.json")
+        if (!file.exists()) {
+            locationLatState.value = ""
+            locationLonState.value = ""
+            locationOffsetState.value = ""
+            return
+        }
+        try {
+            val obj = org.json.JSONObject(file.readText())
+            locationLatState.value = obj.optDouble("x", 0.0).toString()
+            locationLonState.value = obj.optDouble("y", 0.0).toString()
+            locationOffsetState.value = obj.optDouble("offset", 0.0).toString()
+        } catch (e: Exception) {
+            locationConfigStatusState.value = getString(R.string.location_config_error)
+        }
+    }
+
+    private fun saveLocationConfig() {
+        val lat = locationLatState.value.trim().toDoubleOrNull()
+        val lon = locationLonState.value.trim().toDoubleOrNull()
+        val offset = locationOffsetState.value.trim().toDoubleOrNull() ?: 0.0
+        if (lat == null || lon == null) {
+            locationConfigStatusState.value = getString(R.string.location_config_invalid)
+            return
+        }
+        try {
+            ensureVideoDirExists()
+            val obj = org.json.JSONObject()
+            obj.put("x", lat)
+            obj.put("y", lon)
+            obj.put("offset", offset)
+            obj.put("eci", 0)
+            obj.put("pci", 0)
+            obj.put("tac", 0)
+            obj.put("earfcn", 0)
+            obj.put("bandwidth", 0)
+            File(getVideoDir() + "location_config.json").writeText(obj.toString())
+            locationConfigStatusState.value = getString(R.string.location_config_saved)
+        } catch (e: Exception) {
+            locationConfigStatusState.value = getString(R.string.location_config_error)
+        }
     }
 
     private fun makePrefsReadable() {
