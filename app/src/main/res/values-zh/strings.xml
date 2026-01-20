@@ -8,7 +8,9 @@
     <string name="switch6">开启调试日志</string>
     <string name="debug_logs_title">调试日志</string>
     <string name="copy_logs">复制日志</string>
+    <string name="clear_logs">清除日志</string>
     <string name="logs_copied">日志已复制</string>
+    <string name="logs_cleared">日志已清除</string>
     <string name="debug_logs_empty">暂无日志</string>
     <string name="permission_lack_warn">无权限</string>
     <string name="permission_description">访问本地目录的权限用于设定配置文件，如果拒绝，您需要手动设定配置文件。</string>
