@@ -107,6 +107,7 @@ class MainActivity : ComponentActivity() {
         private const val PREFS_NAME = "vcam_prefs"
         private const val KEY_VIDEO_DIR = "video_dir"
         private const val KEY_TREE_URI = "video_dir_tree_uri"
+        private const val KEY_LOCATION_DEFAULT_APPLIED = "location_default_applied"
         private const val DEFAULT_VIDEO_DIR = "/storage/emulated/0/Download/Camera1/"
         private const val CHANNEL_ID = "vcam_status"
         private const val NOTIFICATION_ID = 1001
@@ -123,7 +124,7 @@ class MainActivity : ComponentActivity() {
     private val forcePrivateDirState = mutableStateOf(false)
     private val disableToastState = mutableStateOf(false)
     private val debugLogState = mutableStateOf(false)
-    private val locationDisableState = mutableStateOf(false)
+    private val locationEnableState = mutableStateOf(false)
     private val locationDebugState = mutableStateOf(false)
     private val debugLogTextState = mutableStateOf("")
     private val videoDirState = mutableStateOf(DEFAULT_VIDEO_DIR)
@@ -390,9 +391,9 @@ class MainActivity : ComponentActivity() {
                     onCheckedChange = { updateToggle(FileMode.DEBUG_LOG, it) }
                 )
                 SettingSwitchItem(
-                    title = stringResource(R.string.switch_location_disable), // Disable location spoofing
-                    checked = locationDisableState.value,
-                    onCheckedChange = { updateToggle(FileMode.LOCATION_DISABLE, it) }
+                    title = stringResource(R.string.switch_location_enable), // Enable location spoofing
+                    checked = locationEnableState.value,
+                    onCheckedChange = { setLocationSpoofingEnabled(it) }
                 )
                 SettingSwitchItem(
                     title = stringResource(R.string.switch_location_debug), // Location debug log
@@ -853,13 +854,38 @@ class MainActivity : ComponentActivity() {
         forcePrivateDirState.value = File(getVideoDir() + FileMode.FORCE_PRIVATE_DIR.fileName).exists()
         disableToastState.value = File(getVideoDir() + FileMode.DISABLE_TOAST.fileName).exists()
         debugLogState.value = File(getVideoDir() + FileMode.DEBUG_LOG.fileName).exists()
-        locationDisableState.value = File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName).exists()
+        locationEnableState.value = !File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName).exists()
         locationDebugState.value = File(getVideoDir() + FileMode.LOCATION_DEBUG.fileName).exists()
         loadLocationConfig()
         updateMissingVideoNotification()
     }
 
+    private fun setLocationSpoofingEnabled(enabled: Boolean) {
+        if (!hasPermission()) {
+            requestPermission()
+            return
+        }
+        val file = File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName)
+        if (enabled) {
+            if (file.exists()) {
+                file.delete()
+            }
+        } else {
+            if (!file.exists()) {
+                try {
+                    file.createNewFile()
+                } catch (_: Exception) {
+                }
+            }
+        }
+        syncStateWithFiles()
+    }
+
     private fun ensureLocationDefaults() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        if (prefs.getBoolean(KEY_LOCATION_DEFAULT_APPLIED, false)) {
+            return
+        }
         val disableFile = File(getVideoDir() + FileMode.LOCATION_DISABLE.fileName)
         if (!disableFile.exists()) {
             try {
@@ -867,6 +893,7 @@ class MainActivity : ComponentActivity() {
             } catch (_: Exception) {
             }
         }
+        prefs.edit().putBoolean(KEY_LOCATION_DEFAULT_APPLIED, true).apply()
     }
 
     private fun loadLocationConfig() {
