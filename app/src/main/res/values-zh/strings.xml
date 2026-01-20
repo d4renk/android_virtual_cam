@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">VCAM</string>
     <string name="switch1">强制显示权限缺失提示</string>
-    <string name="switch2">临时关闭模块</string>
+    <string name="switch2">临时关闭虚拟相机模块</string>
     <string name="switch3">播放视频声音</string>
     <string name="switch4">强制每个应用程序使用私有目录（无论权限）</string>
     <string name="switch5">关闭提示消息</string>

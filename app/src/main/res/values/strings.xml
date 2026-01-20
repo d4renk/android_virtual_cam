@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">VCAM</string>
     <string name="switch1">Force to show permission lack warning</string>
-    <string name="switch2">Disable the module temporarily (On is disable)</string>
+    <string name="switch2">Disable the virtual camera module temporarily (On is disable)</string>
     <string name="switch3">Play sounds of videos</string>
     <string name="switch4">Force every app use private directory</string>
     <string name="switch5">Disable toast message</string>
