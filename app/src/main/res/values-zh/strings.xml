@@ -6,7 +6,7 @@
     <string name="switch4">强制每个应用程序使用私有目录（无论权限）</string>
     <string name="switch5">关闭提示消息</string>
     <string name="switch6">开启虚拟相机调试日志</string>
-    <string name="switch_location_disable">关闭定位伪装</string>
+    <string name="switch_location_enable">开启定位伪装</string>
     <string name="switch_location_debug">开启定位调试日志</string>
     <string name="location_config_title">坐标设置</string>
     <string name="location_latitude">纬度 (x)</string>

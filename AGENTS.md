@@ -28,3 +28,9 @@
 ## Configuration Notes
 - Android SDK path is defined in `local.properties` via `sdk.dir=/home/sun/Android/Sdk`.
 - Alternatively, set `ANDROID_SDK_ROOT` to the same path in your shell environment.
+
+## Current Tasks
+- Integrate FuckLocation core hooks into `:app` with file-flag config.
+- Provide UI for location spoofing toggle and coordinate input.
+- Default location spoofing off; ensure toggle state persists.
+- Keep location debug logging enabled by default in the UI.
